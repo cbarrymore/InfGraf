@@ -6,15 +6,15 @@ import os
 import imghdr
 
 path = "C:/Users/cbarr/Downloads/USMNT vs. Ghana _ Highlights_ October 17, 2023.mp4"
+def detectar_objetos(ruta):
+    output = "detection_video.mp4"
+    model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+    model.cuda()
 
-output = "detection_video.mp4"
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
-model.cuda()
-
-if len(sys.argv) != 2:
-    print("Uso: python programa.py <ruta o número>")
-else:
-    argumento = sys.argv[1]
+    #if len(sys.argv) != 2:
+    #    print("Uso: python programa.py <ruta o número>")
+    #else:
+    argumento = ruta
     if argumento.isnumeric():
         cap = cv2.VideoCapture(0)
         while 1:
