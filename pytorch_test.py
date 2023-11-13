@@ -10,8 +10,9 @@ from matplotlib import pyplot as plt
 # model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
 # model.cuda()
 
-img = cv2.imread("151_jpg.rf.c4c44e9a3e29493053f107c6ec46f7c2.jpg", cv2.IMREAD_GRAYSCALE)
-img.shape[:]
+img = cv2.imread(
+    "10748_jpg.rf.c86bc9a4116f0102ad8ccde07a050dec.jpg", cv2.IMREAD_GRAYSCALE)
+
 assert img is not None, "file could not be read, check with os.path.exists()"
 hist = cv2.calcHist([img], [0], None, [256], [0, 256])
 print(hist)
