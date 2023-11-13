@@ -11,6 +11,7 @@
 from PySide2.QtCore import QCoreApplication, QRect, QMetaObject, Qt
 from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QMenuBar, QToolBar, QStatusBar, QFileDialog, QLabel
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import cv2
 import pytorch_media_detect
 
@@ -19,7 +20,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(400, 300)
+        MainWindow.resize(431, 331)
         self.centralWidget = QWidget(MainWindow)
         self.centralWidget.setObjectName(u"centralWidget")
         self.pushButton = QPushButton(self.centralWidget)
@@ -30,23 +31,26 @@ class Ui_MainWindow(object):
         self.pushButton_2.setGeometry(QRect(10, 10, 101, 31))
         self.pushButton_3 = QPushButton(self.centralWidget)
         self.pushButton_3.setObjectName(u"pushButton_3")
-        self.pushButton_3.setGeometry(QRect(10, 50, 101, 31))
+        self.pushButton_3.setGeometry(QRect(120, 10, 101, 31))
         self.label = QLabel(self.centralWidget)
         self.label.setObjectName(u"label")
-        self.label.setGeometry(QRect(130, 60, 47, 13))
+        self.label.setGeometry(QRect(20, 220, 47, 13))
         self.label_2 = QLabel(self.centralWidget)
         self.label_2.setObjectName(u"label_2")
-        self.label_2.setGeometry(QRect(180, 60, 211, 16))
+        self.label_2.setGeometry(QRect(70, 220, 351, 20))
         self.pushButton_4 = QPushButton(self.centralWidget)
         self.pushButton_4.setObjectName(u"pushButton_4")
-        self.pushButton_4.setGeometry(QRect(10, 90, 101, 31))
+        self.pushButton_4.setGeometry(QRect(10, 240, 101, 31))
         self.pushButton_5 = QPushButton(self.centralWidget)
         self.pushButton_5.setObjectName(u"pushButton_5")
-        self.pushButton_5.setGeometry(QRect(10, 130, 101, 31))
+        self.pushButton_5.setGeometry(QRect(120, 240, 101, 31))
+        self.label_3 = QLabel(self.centralWidget)
+        self.label_3.setObjectName(u"label_3")
+        self.label_3.setGeometry(QRect(70, 50, 281, 151))
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QMenuBar(MainWindow)
         self.menuBar.setObjectName(u"menuBar")
-        self.menuBar.setGeometry(QRect(0, 0, 400, 21))
+        self.menuBar.setGeometry(QRect(0, 0, 431, 21))
         MainWindow.setMenuBar(self.menuBar)
         self.mainToolBar = QToolBar(MainWindow)
         self.mainToolBar.setObjectName(u"mainToolBar")
@@ -69,6 +73,7 @@ class Ui_MainWindow(object):
         self.label_2.setText("")
         self.pushButton_4.setText(QCoreApplication.translate("MainWindow", u"Detectar", None))
         self.pushButton_5.setText(QCoreApplication.translate("MainWindow", u"Color", None))
+        self.label_3.setText("")
     # retranslateUi
 
 class ArchivoInfo:
@@ -92,20 +97,28 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             pixmap = QPixmap(filename)
             self.crear_nuevo_archivo(str(filename))
             self.label_2.setText(filename)
+            self.label_3.setPixmap(pixmap)
 
     def cargar_video(self):
         filtro_video = "Archivos de video (*.avi *.mp4 *.mkv *.mov);;Todos los formatos de video (*.avi *.mp4 *.mkv *.mov);;Otros (*.*)"
         nombre, _ = QFileDialog.getOpenFileName(self, "Abrir video", ".", filtro_video)
         if nombre:
-            self.crear_nuevo_archivo(str(nombre))
-            self.label_2.setText(nombre)           
-    
+            self.crear_nuevo_archivo(str(nombre))         
+            media_player = QMediaPlayer()
+            media_content = QMediaContent(QUrl.fromLocalFile(nombre))
+            media_player.setMedia(media_content)
+
+            pixmap = QPixmap(media_player.thumbnail())
+            self.label_2.setText(nombre)
+            self.label_3.setPixmap(pixmap.scaledToWidth(300))
+            
     def detectar_objetos(self):
         pytorch_media_detect.detectar_objetos(archivo.nombre)
             
     def crear_nuevo_archivo(self, nombre):
         archivo.nombre = nombre
 
+    #def detectar_color_principal
 
 
 if __name__ == "__main__":
