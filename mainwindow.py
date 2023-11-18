@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainwindow.ui'
+# Form generated from reading UI file 'mainwindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 5.15.2
+# Created by: Qt User Interface Compiler version 5.15.2
 ##
-## WARNING! All changes made in this file will be lost when recompiling UI file!
+# WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
 from PySide2.QtCore import QCoreApplication, QRect, QMetaObject, Qt
@@ -65,25 +65,35 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"PushButton", None))
-        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Cargar imagen", None))
-        self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"Cargar video", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Nombre:", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate(
+            "MainWindow", u"MainWindow", None))
+        self.pushButton.setText(QCoreApplication.translate(
+            "MainWindow", u"PushButton", None))
+        self.pushButton_2.setText(QCoreApplication.translate(
+            "MainWindow", u"Cargar imagen", None))
+        self.pushButton_3.setText(QCoreApplication.translate(
+            "MainWindow", u"Cargar video", None))
+        self.label.setText(QCoreApplication.translate(
+            "MainWindow", u"Nombre:", None))
         self.label_2.setText("")
-        self.pushButton_4.setText(QCoreApplication.translate("MainWindow", u"Detectar", None))
-        self.pushButton_5.setText(QCoreApplication.translate("MainWindow", u"Color", None))
+        self.pushButton_4.setText(QCoreApplication.translate(
+            "MainWindow", u"Detectar", None))
+        self.pushButton_5.setText(
+            QCoreApplication.translate("MainWindow", u"Color", None))
         self.label_3.setText("")
     # retranslateUi
+
 
 class ArchivoInfo:
     def __init__(self):
         self.nombre = ""
-        
+
+
 archivo = ArchivoInfo()
 
-class MyMainWindow(QMainWindow, Ui_MainWindow):    
-    
+
+class MyMainWindow(QMainWindow, Ui_MainWindow):
+
     def __init__(self):
         super(MyMainWindow, self).__init__()
         self.setupUi(self)
@@ -92,7 +102,8 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_4.clicked.connect(self.detectar_objetos)
 
     def cargar_imagen(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Seleccionar imagen", ".", "Images (*.png *.jpg *.bmp)")
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Seleccionar imagen", ".", "Images (*.png *.jpg *.bmp)")
         if filename:
             pixmap = QPixmap(filename)
             self.crear_nuevo_archivo(str(filename))
@@ -101,9 +112,10 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
 
     def cargar_video(self):
         filtro_video = "Archivos de video (*.avi *.mp4 *.mkv *.mov);;Todos los formatos de video (*.avi *.mp4 *.mkv *.mov);;Otros (*.*)"
-        nombre, _ = QFileDialog.getOpenFileName(self, "Abrir video", ".", filtro_video)
+        nombre, _ = QFileDialog.getOpenFileName(
+            self, "Abrir video", ".", filtro_video)
         if nombre:
-            self.crear_nuevo_archivo(str(nombre))         
+            self.crear_nuevo_archivo(str(nombre))
             media_player = QMediaPlayer()
             media_content = QMediaContent(QUrl.fromLocalFile(nombre))
             media_player.setMedia(media_content)
@@ -111,14 +123,14 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             pixmap = QPixmap(media_player.thumbnail())
             self.label_2.setText(nombre)
             self.label_3.setPixmap(pixmap.scaledToWidth(300))
-            
+
     def detectar_objetos(self):
         pytorch_media_detect.detectar_objetos(archivo.nombre)
-            
+
     def crear_nuevo_archivo(self, nombre):
         archivo.nombre = nombre
 
-    #def detectar_color_principal
+    # def detectar_color_principal
 
 
 if __name__ == "__main__":
