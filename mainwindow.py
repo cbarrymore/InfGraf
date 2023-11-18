@@ -15,6 +15,9 @@ import pytorch_media_detect
 import torch
 import numpy as np
 
+criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+flags = cv2.KMEANS_RANDOM_CENTERS
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -89,7 +92,9 @@ class ArchivoInfo:
         self.nombre = ""
 
 
-color_principal = False
+color_clustering = False
+object_detection = False
+
 archivo = ArchivoInfo()
 
 
@@ -100,9 +105,9 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.pushButton_2.clicked.connect(self.cargar_imagen)
         self.pushButton_3.clicked.connect(self.cargar_video)
-        self.pushButton_4.clicked.connect(self.detectar_objetos)
+        self.pushButton_4.clicked.connect(self.mostrar_video)
         self.pushButton_5.clicked.connect(
-            self.activar_deteccion_color_principal)
+            self.activate_color_clustering)
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
         self.model.cuda()
 
@@ -124,7 +129,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             self.label_2.setText(nombre)
             archivo.nombre
 
-    def detectar_objetos(self):
+    def mostrar_video(self):
         cap = cv2.VideoCapture(archivo.nombre)
 
         while cap.isOpened():
@@ -132,12 +137,13 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             print("tratando frame")
             if not ret:
                 break
+            if object_detection == True:
+                # call a function to detect objects
+                frame = self.detect_objects(frame)
 
             # if color_principal == True:
 
-            detection = self.model(frame)
-            frame_with_detection = detection.render()[0]
-            cv2.imshow("MainWindow", np.squeeze(frame_with_detection))
+            cv2.imshow("MainWindow", np.squeeze(frame))
             if cv2.waitKey(1) > 0:
                 break
 
@@ -146,11 +152,59 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
     def crear_nuevo_archivo(self, nombre):
         archivo.nombre = nombre
 
-    def activar_deteccion_color_principal(self):
-        if color_principal == True:
-            color_principal = False
+    def activate_color_clustering(self):
+        if color_clustering == True:
+            color_clustering = False
         else:
-            color_principal = True
+            color_clustering = True
+
+    def activar_object_detection(self):
+        if object_detection == True:
+            object_detection = False
+        else:
+            object_detection = True
+
+    def detect_objects(self, frame):
+        # Call the model to detect objects in the frame
+        detection = self.model(frame)
+        pred = detection.xyxy[0]  # img1 predictions (tensor)
+        if color_clustering == True:
+            detection_frame = self.color_clustering(pred, frame)
+        else:
+            detection_frame = detection.render()[0]
+        return detection_frame
+
+    def color_clustering(self, pred, frame):
+        pred = pred[pred[:, 5] == 0]
+        for det in pred:
+            xmin, ymin, xmax, ymax, conf, class_id = det
+            xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
+            # Obtenemos el centro del rectangulo de detección
+            x_center_of_rectangle, y_center_of_rectangle = int(
+                (xmax+xmin)//2), int((ymax+ymin)//2)
+            # Sacamos la anchura y altura que queremos que tenga
+            # la imagen del centro del rectangulo de deteccion
+            center_width_min, center_width_max = (x_center_of_rectangle +
+                                                  xmin)//2, (x_center_of_rectangle+xmax)//2
+            center_height_min, center_height_max = (y_center_of_rectangle +
+                                                    ymin)//2, (y_center_of_rectangle)
+            # Sacamos de la imagen original la imagen del centro del rectangulo de deteccion
+            detection_center_image = frame[center_height_min:center_height_max,
+                                           center_width_min:center_width_max]
+            # Sacamos las dimensiones del centro de deteccion
+            height, width, _ = np.shape(detection_center_image)
+            # Hacemos clustering
+            data = np.reshape(detection_center_image, (height * width, 3))
+            data = np.float32(data)
+            number_clusters = 1
+            compactness, labels, centers = cv2.kmeans(
+                data, number_clusters, None, criteria, 10, flags)
+            print(centers)
+            for index, row in enumerate(centers):
+                blue, green, red = int(row[0]), int(row[1]), int(row[2])
+                cv2.rectangle(frame, (xmin, ymin), (xmax, ymax),
+                              (blue, green, red), 2)
+        return frame
 
 
 if __name__ == "__main__":
