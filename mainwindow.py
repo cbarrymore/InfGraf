@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 ################################################################################
 # Form generated from reading UI file 'mainwindow.ui'
 ##
@@ -8,12 +6,14 @@
 # WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide2.QtCore import QCoreApplication, QRect, QMetaObject, Qt
-from PySide2.QtGui import QPixmap
+from PySide2.QtCore import QCoreApplication, QRect, QMetaObject, Qt, QUrl
+from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QMenuBar, QToolBar, QStatusBar, QFileDialog, QLabel
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
 import cv2
 import pytorch_media_detect
+import torch
+import numpy as np
 
 
 class Ui_MainWindow(object):
@@ -89,6 +89,7 @@ class ArchivoInfo:
         self.nombre = ""
 
 
+color_principal = False
 archivo = ArchivoInfo()
 
 
@@ -100,6 +101,10 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_2.clicked.connect(self.cargar_imagen)
         self.pushButton_3.clicked.connect(self.cargar_video)
         self.pushButton_4.clicked.connect(self.detectar_objetos)
+        self.pushButton_5.clicked.connect(
+            self.activar_deteccion_color_principal)
+        self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+        self.model.cuda()
 
     def cargar_imagen(self):
         filename, _ = QFileDialog.getOpenFileName(
@@ -116,21 +121,36 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             self, "Abrir video", ".", filtro_video)
         if nombre:
             self.crear_nuevo_archivo(str(nombre))
-            media_player = QMediaPlayer()
-            media_content = QMediaContent(QUrl.fromLocalFile(nombre))
-            media_player.setMedia(media_content)
-
-            pixmap = QPixmap(media_player.thumbnail())
             self.label_2.setText(nombre)
-            self.label_3.setPixmap(pixmap.scaledToWidth(300))
+            archivo.nombre
 
     def detectar_objetos(self):
-        pytorch_media_detect.detectar_objetos(archivo.nombre)
+        cap = cv2.VideoCapture(archivo.nombre)
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+            print("tratando frame")
+            if not ret:
+                break
+
+            # if color_principal == True:
+
+            detection = self.model(frame)
+            frame_with_detection = detection.render()[0]
+            cv2.imshow("MainWindow", np.squeeze(frame_with_detection))
+            if cv2.waitKey(1) > 0:
+                break
+
+            cap.release()
 
     def crear_nuevo_archivo(self, nombre):
         archivo.nombre = nombre
 
-    # def detectar_color_principal
+    def activar_deteccion_color_principal(self):
+        if color_principal == True:
+            color_principal = False
+        else:
+            color_principal = True
 
 
 if __name__ == "__main__":
