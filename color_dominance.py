@@ -17,7 +17,7 @@ height, width, _ = np.shape(img)
 data = np.reshape(img, (height * width, 3))
 data = np.float32(data)
 
-number_clusters = 12
+number_clusters = 1
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
 flags = cv2.KMEANS_RANDOM_CENTERS
 compactness, labels, centers = cv2.kmeans(
