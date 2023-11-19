@@ -3,6 +3,9 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
+def distancia_color(color1, color2):
+    return sum((c1 - c2) ** 2 for c1, c2 in zip(color1, color2)) ** 0.5
+
 color = ('b', 'g', 'r')
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
 flags = cv2.KMEANS_RANDOM_CENTERS
@@ -11,18 +14,21 @@ model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
 model.cuda()
 
 img = cv2.imread(
-    '10748_jpg.rf.c86bc9a4116f0102ad8ccde07a050dec.jpg')
+    'istockphoto-647672126-612x612.jpg')
 
 mask = np.zeros_like(img)
 
 mask = np.zeros(img.shape[:2], np.uint8)
 
+margen = 100
+color_count = {}
 
 result = model(img)
 # cv2.imshow("a", img)
 # cv2.waitKey(0)
 result.print()
 pred = result.xyxy[0]  # img1 predictions (tensor)
+pred = pred[pred[:,5]==0]
 
 for det in pred:
     x_min, y_min, x_max, y_max, conf, class_id = det
@@ -62,14 +68,44 @@ for det in pred:
         data, number_clusters, None, criteria, 10, flags)
 
     print(centers)
+    
+    
     for index, row in enumerate(centers):
         blue, green, red = int(row[0]), int(row[1]), int(row[2])
+        
+        
+
+        color_encontrado = None
+        distancia_minima = float('inf')  # Inicializa con un valor grande
+        # Busca combinaciones de colores similares dentro del margen de error
+        for color_key in color_count:
+            distancia_actual = distancia_color(color_key, (blue, green, red))
+            if int(distancia_actual) <= margen and distancia_actual < distancia_minima:
+                color_encontrado = color_key
+                distancia_minima = distancia_actual
+
+        if color_encontrado is not None:
+            # Incrementa el contador para el color encontrado
+            color_count[color_encontrado] += 1
+        else:
+            # Agrega una nueva entrada al diccionario si no se encontró un color similar
+            color_count[(blue, green, red)] = 1
+            
         cv2.rectangle(img, (x_min, y_min), (x_max, y_max),
-                      (blue, green, red), 2)
+                      (color_encontrado), 2)
+
+for color, count in color_count.items():
+    print(f"Color {color}: {count} iteraciones")
+        
+        
 
 cv2.imshow('Image', img)
 cv2.waitKey(0)
+
 quit()
+
+
+
 
 mask[center_height_min:center_height_max,
      center_width_min:center_width_max] = 255
