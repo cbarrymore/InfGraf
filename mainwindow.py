@@ -47,6 +47,9 @@ class Ui_MainWindow(object):
         self.pushButton_5 = QPushButton(self.centralWidget)
         self.pushButton_5.setObjectName(u"pushButton_5")
         self.pushButton_5.setGeometry(QRect(120, 240, 101, 31))
+        self.pushButton_6 = QPushButton(self.centralWidget)
+        self.pushButton_6.setObjectName(u"pushButton_6")
+        self.pushButton_6.setGeometry(QRect(150, 280, 141, 71))
         self.label_3 = QLabel(self.centralWidget)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setGeometry(QRect(70, 50, 281, 151))
@@ -84,6 +87,8 @@ class Ui_MainWindow(object):
         self.pushButton_5.setText(
             QCoreApplication.translate("MainWindow", u"Color", None))
         self.label_3.setText("")
+        self.pushButton_6.setText(
+            QCoreApplication.translate("MainWindow", u"Carlos", None))
     # retranslateUi
 
 
@@ -92,14 +97,13 @@ class ArchivoInfo:
         self.nombre = ""
 
 
-color_clustering = False
-object_detection = False
 
 archivo = ArchivoInfo()
 
 
 class MyMainWindow(QMainWindow, Ui_MainWindow):
-
+    
+    
     def __init__(self):
         super(MyMainWindow, self).__init__()
         self.setupUi(self)
@@ -107,7 +111,10 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_3.clicked.connect(self.cargar_video)
         self.pushButton_4.clicked.connect(self.mostrar_video)
         self.pushButton_5.clicked.connect(
-            self.activate_color_clustering)
+            self.activar_object_detection)
+        self.pushButton_6.clicked.connect(self.activate_color_clustering)
+        self.color_clustering = False
+        self.object_detection = False
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
         self.model.cuda()
 
@@ -137,44 +144,46 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             print("tratando frame")
             if not ret:
                 break
-            if object_detection == True:
+            if self.object_detection == True:
                 # call a function to detect objects
                 frame = self.detect_objects(frame)
 
             # if color_principal == True:
-
             cv2.imshow("MainWindow", np.squeeze(frame))
             if cv2.waitKey(1) > 0:
                 break
-
-            cap.release()
+        cap.release()
 
     def crear_nuevo_archivo(self, nombre):
         archivo.nombre = nombre
 
     def activate_color_clustering(self):
-        if color_clustering == True:
-            color_clustering = False
+        if self.color_clustering == True:
+            self.color_clustering = False
         else:
-            color_clustering = True
+            self.color_clustering = True
 
     def activar_object_detection(self):
-        if object_detection == True:
-            object_detection = False
+        if self.object_detection == True:
+            self.object_detection = False
         else:
-            object_detection = True
+            self.object_detection = True
 
     def detect_objects(self, frame):
         # Call the model to detect objects in the frame
+        print("Carlos1")
         detection = self.model(frame)
         pred = detection.xyxy[0]  # img1 predictions (tensor)
-        if color_clustering == True:
-            detection_frame = self.color_clustering(pred, frame)
-        else:
+        
+        if self.object_detection:
+            print("Carlos3")
             detection_frame = detection.render()[0]
+        if self.color_clustering == True:
+            print("Carlos2")
+            detection_frame = self.func_color_clustering(pred, frame)
         return detection_frame
 
-    def color_clustering(self, pred, frame):
+    def func_color_clustering(self, pred, frame):
         pred = pred[pred[:, 5] == 0]
         for det in pred:
             xmin, ymin, xmax, ymax, conf, class_id = det
