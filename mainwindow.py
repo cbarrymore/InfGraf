@@ -141,9 +141,11 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             self.crear_nuevo_archivo(str(nombre))
             self.label_2.setText(nombre)
 
+    count_frame = 0
     def mostrar_contenido(self):
         if archivo.tipo == "video":
             cap = cv2.VideoCapture(archivo.nombre)
+            self.count_frame = 0
             while cap.isOpened():
                 ret, frame = cap.read()
                 print("tratando frame")
@@ -156,6 +158,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
                     frame = self.counting(frame)
                 # if color_principal == True:
                 cv2.imshow("MainWindow", np.squeeze(frame))
+                self.count_frame += 1
                 if cv2.waitKey(1) > 0:
                     break
             cap.release()
@@ -197,7 +200,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         if archivo.tipo == "imagen":
             self.mostrar_contenido()
 
-    def counting(self, frame):
+    #def counting(self, frame):
         
     
     def detect_objects(self, frame):
@@ -214,8 +217,15 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             detection_frame = self.func_color_clustering(pred, frame)
         return detection_frame
 
+    def distancia_color(self, color1, color2):
+        return sum((c1 - c2) ** 2 for c1, c2 in zip(color1, color2)) ** 0.5
+
+    color_count = {}
     def func_color_clustering(self, pred, frame):
         pred = pred[pred[:, 5] == 0]
+        margen = 100
+        if self.count_frame % 5 == 0:
+            self.color_count = {}
         for det in pred:
             xmin, ymin, xmax, ymax, conf, class_id = det
             xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
@@ -242,9 +252,37 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             print(centers)
             for index, row in enumerate(centers):
                 blue, green, red = int(row[0]), int(row[1]), int(row[2])
+                
+                color_encontrado = None
+                distancia_minima = float('inf')
+                if self.count_frame % 5 == 0:
+                    for color_key in self.color_count:
+                        # distancia_actual = distancia_color(color_key, (blue, green, red))
+                        distancia_actual = self.distancia_color(color_key, (blue, green, red))
+                        if int(distancia_actual) <= margen and distancia_actual < distancia_minima:
+                            color_encontrado = color_key
+                            distancia_minima = distancia_actual
+                    
+                    if color_encontrado is not None:
+                        # Incrementa el contador para el color encontrado
+                        self.color_count[color_encontrado] += 1
+                    else:
+                        # Agrega una nueva entrada al diccionario si no se encontró un color similar
+                        self.color_count[(blue, green, red)] = 1
+                        color_encontrado = (blue, green, red)
+                
                 cv2.rectangle(frame, (xmin, ymin), (xmax, ymax),
                               (blue, green, red), 2)
+            i = 0
+
+            for color, count in self.color_count.items():
+                cv2.putText(frame, f"Numero total: {count}", (0 + i, 0 + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (color),
+                        1)
+                i += 150
+                
         return frame
+
+    
 
 if __name__ == "__main__":
     import sys
