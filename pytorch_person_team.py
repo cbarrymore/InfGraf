@@ -3,8 +3,23 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
+
 def distancia_color(color1, color2):
     return sum((c1 - c2) ** 2 for c1, c2 in zip(color1, color2)) ** 0.5
+
+
+def distancia_euclidiana(color1, color2):
+    # Implementa la distancia euclidiana entre dos colores RGB
+    return ((color1[0] - color2[0])**2 + (color1[1] - color2[1])**2 + (color1[2] - color2[2])**2) ** 0.5
+
+
+def encontrar_color_cercano(color, color_count):
+    # Encuentra el color básico más cercano al color dado
+    distancias = {bgr: distancia_euclidiana(
+        color, color_count[bgr]) for bgr in color_count}
+    color_cercano = min(distancias, key=distancias.get)
+    return color_cercano
+
 
 color = ('b', 'g', 'r')
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
@@ -14,7 +29,7 @@ model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
 model.cuda()
 
 img = cv2.imread(
-    'istockphoto-647672126-612x612.jpg')
+    'bb1a9c9f-a09e-42d6-8fe9-8f9461790878_16-9-discover-aspect-ratio_default_0.jpg')
 
 mask = np.zeros_like(img)
 
@@ -28,7 +43,7 @@ result = model(img)
 # cv2.waitKey(0)
 result.print()
 pred = result.xyxy[0]  # img1 predictions (tensor)
-pred = pred[pred[:,5]==0]
+pred = pred[pred[:, 5] == 0]
 
 for det in pred:
     x_min, y_min, x_max, y_max, conf, class_id = det
@@ -68,18 +83,22 @@ for det in pred:
         data, number_clusters, None, criteria, 10, flags)
 
     print(centers)
-    
-    
+
     for index, row in enumerate(centers):
         blue, green, red = int(row[0]), int(row[1]), int(row[2])
-        
-        
 
         color_encontrado = None
         distancia_minima = float('inf')  # Inicializa con un valor grande
         # Busca combinaciones de colores similares dentro del margen de error
+
+        # color_cercano = encontrar_color_cercano((blue, green, red), color_count)
+        # distancia = distancia_euclidiana((blue, green, red), color_count[color_cercano])
+        # if distancia <= margen:
+
         for color_key in color_count:
-            distancia_actual = distancia_color(color_key, (blue, green, red))
+            # distancia_actual = distancia_color(color_key, (blue, green, red))
+            distancia_actual = distancia_euclidiana(
+                color_key, (blue, green, red))
             if int(distancia_actual) <= margen and distancia_actual < distancia_minima:
                 color_encontrado = color_key
                 distancia_minima = distancia_actual
@@ -90,21 +109,18 @@ for det in pred:
         else:
             # Agrega una nueva entrada al diccionario si no se encontró un color similar
             color_count[(blue, green, red)] = 1
-            
+            color_encontrado = (blue, green, red)
         cv2.rectangle(img, (x_min, y_min), (x_max, y_max),
                       (color_encontrado), 2)
 
 for color, count in color_count.items():
     print(f"Color {color}: {count} iteraciones")
-        
-        
+
 
 cv2.imshow('Image', img)
 cv2.waitKey(0)
 
 quit()
-
-
 
 
 mask[center_height_min:center_height_max,

@@ -50,6 +50,9 @@ class Ui_MainWindow(object):
         self.pushButton_6 = QPushButton(self.centralWidget)
         self.pushButton_6.setObjectName(u"pushButton_6")
         self.pushButton_6.setGeometry(QRect(150, 280, 141, 71))
+        self.pushButton_7 = QPushButton(self.centralWidget)
+        self.pushButton_7.setObjectName(u"pushButton_7")
+        self.pushButton_7.setGeometry(QRect(150, 350, 141, 71))
         self.label_3 = QLabel(self.centralWidget)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setGeometry(QRect(70, 50, 281, 151))
@@ -83,38 +86,41 @@ class Ui_MainWindow(object):
             "MainWindow", u"Nombre:", None))
         self.label_2.setText("")
         self.pushButton_4.setText(QCoreApplication.translate(
-            "MainWindow", u"Detectar", None))
+            "MainWindow", u"Ver contenido", None))
         self.pushButton_5.setText(
-            QCoreApplication.translate("MainWindow", u"Color", None))
+            QCoreApplication.translate("MainWindow", u"Detectar", None))
         self.label_3.setText("")
         self.pushButton_6.setText(
-            QCoreApplication.translate("MainWindow", u"Carlos", None))
+            QCoreApplication.translate("MainWindow", u"Colores", None))
+        self.pushButton_7.setText(
+            QCoreApplication.translate("MainWindow", u"Contar", None))
     # retranslateUi
 
 
 class ArchivoInfo:
     def __init__(self):
         self.nombre = ""
-
+        self.tipo = ""
 
 
 archivo = ArchivoInfo()
 
 
 class MyMainWindow(QMainWindow, Ui_MainWindow):
-    
-    
+
     def __init__(self):
         super(MyMainWindow, self).__init__()
         self.setupUi(self)
         self.pushButton_2.clicked.connect(self.cargar_imagen)
         self.pushButton_3.clicked.connect(self.cargar_video)
-        self.pushButton_4.clicked.connect(self.mostrar_video)
+        self.pushButton_4.clicked.connect(self.mostrar_contenido)
         self.pushButton_5.clicked.connect(
             self.activar_object_detection)
         self.pushButton_6.clicked.connect(self.activate_color_clustering)
+        self.pushButton_7.clicked.connect(self.activate_counting)
         self.color_clustering = False
         self.object_detection = False
+        self.counting = False
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
         self.model.cuda()
 
@@ -134,47 +140,72 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         if nombre:
             self.crear_nuevo_archivo(str(nombre))
             self.label_2.setText(nombre)
-            archivo.nombre
 
-    def mostrar_video(self):
-        cap = cv2.VideoCapture(archivo.nombre)
-
-        while cap.isOpened():
-            ret, frame = cap.read()
-            print("tratando frame")
-            if not ret:
-                break
+    def mostrar_contenido(self):
+        if archivo.tipo == "video":
+            cap = cv2.VideoCapture(archivo.nombre)
+            while cap.isOpened():
+                ret, frame = cap.read()
+                print("tratando frame")
+                if not ret:
+                    break
+                if self.object_detection == True:
+                    # call a function to detect objects
+                    frame = self.detect_objects(frame)
+                if self.counting == True:
+                    frame = self.counting(frame)
+                # if color_principal == True:
+                cv2.imshow("MainWindow", np.squeeze(frame))
+                if cv2.waitKey(1) > 0:
+                    break
+            cap.release()
+        else:
+            img = cv2.imread(archivo.nombre)
             if self.object_detection == True:
                 # call a function to detect objects
-                frame = self.detect_objects(frame)
-
-            # if color_principal == True:
-            cv2.imshow("MainWindow", np.squeeze(frame))
-            if cv2.waitKey(1) > 0:
-                break
-        cap.release()
+                img = self.detect_objects(img)
+            cv2.imshow("MainWindow", np.squeeze(img))
 
     def crear_nuevo_archivo(self, nombre):
         archivo.nombre = nombre
+        if archivo.nombre.split('.')[-1].lower() in ["jpg", "png", "bmp"]:
+            archivo.tipo = "imagen"
+        else:
+            archivo.tipo = "video"
 
     def activate_color_clustering(self):
         if self.color_clustering == True:
             self.color_clustering = False
         else:
             self.color_clustering = True
+        if archivo.tipo == "imagen":
+            self.mostrar_contenido()
 
     def activar_object_detection(self):
         if self.object_detection == True:
             self.object_detection = False
         else:
             self.object_detection = True
+        if archivo.tipo == "imagen":
+            self.mostrar_contenido()
 
+    def activate_counting(self):
+        if self.counting == True:
+            self.counting = False
+        else:
+            self.counting = True
+        if archivo.tipo == "imagen":
+            self.mostrar_contenido()
+
+    def counting(self, frame):
+        
+    
     def detect_objects(self, frame):
         # Call the model to detect objects in the frame
         print("Carlos1")
         detection = self.model(frame)
         pred = detection.xyxy[0]  # img1 predictions (tensor)
-        
+
         if self.object_detection:
             print("Carlos3")
             detection_frame = detection.render()[0]
@@ -214,7 +245,6 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
                 cv2.rectangle(frame, (xmin, ymin), (xmax, ymax),
                               (blue, green, red), 2)
         return frame
-
 
 if __name__ == "__main__":
     import sys
