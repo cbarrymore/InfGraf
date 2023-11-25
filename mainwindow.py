@@ -13,6 +13,7 @@ from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
 import cv2
 import pytorch_media_detect
 import torch
+import counting_by_color
 import numpy as np
 
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
@@ -23,7 +24,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(431, 331)
+        MainWindow.resize(600, 600)
         self.centralWidget = QWidget(MainWindow)
         self.centralWidget.setObjectName(u"centralWidget")
         self.pushButton = QPushButton(self.centralWidget)
@@ -121,6 +122,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.color_clustering = False
         self.object_detection = False
         self.counting = False
+
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
         self.model.cuda()
 
@@ -142,6 +144,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             self.label_2.setText(nombre)
 
     count_frame = 0
+
     def mostrar_contenido(self):
         if archivo.tipo == "video":
             cap = cv2.VideoCapture(archivo.nombre)
@@ -155,19 +158,22 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
                     # call a function to detect objects
                     frame = self.detect_objects(frame)
                 if self.counting == True:
-                    frame = self.counting(frame)
+                    frame = counting_by_color.do_video(frame)
                 # if color_principal == True:
-                cv2.imshow("MainWindow", np.squeeze(frame))
+                cv2.imshow("Contenido", np.squeeze(frame))
                 self.count_frame += 1
                 if cv2.waitKey(1) > 0:
                     break
             cap.release()
         else:
-            img = cv2.imread(archivo.nombre)
-            if self.object_detection == True:
-                # call a function to detect objects
-                img = self.detect_objects(img)
-            cv2.imshow("MainWindow", np.squeeze(img))
+            if self.counting == True:
+                counting_by_color.do_image(archivo.nombre)
+            else:
+                img = cv2.imread(archivo.nombre)
+                if self.object_detection == True:
+                    # call a function to detect objects
+                    img = self.detect_objects(img)
+                cv2.imshow("Contenido", np.squeeze(img))
 
     def crear_nuevo_archivo(self, nombre):
         archivo.nombre = nombre
@@ -200,20 +206,16 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         if archivo.tipo == "imagen":
             self.mostrar_contenido()
 
-    #def counting(self, frame):
-        
-    
+    # def counting(self, frame):
+
     def detect_objects(self, frame):
         # Call the model to detect objects in the frame
-        print("Carlos1")
         detection = self.model(frame)
         pred = detection.xyxy[0]  # img1 predictions (tensor)
 
         if self.object_detection:
-            print("Carlos3")
             detection_frame = detection.render()[0]
         if self.color_clustering == True:
-            print("Carlos2")
             detection_frame = self.func_color_clustering(pred, frame)
         return detection_frame
 
@@ -221,6 +223,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         return sum((c1 - c2) ** 2 for c1, c2 in zip(color1, color2)) ** 0.5
 
     color_count = {}
+
     def func_color_clustering(self, pred, frame):
         pred = pred[pred[:, 5] == 0]
         margen = 100
@@ -252,17 +255,18 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             print(centers)
             for index, row in enumerate(centers):
                 blue, green, red = int(row[0]), int(row[1]), int(row[2])
-                
+
                 color_encontrado = None
                 distancia_minima = float('inf')
                 if self.count_frame % 5 == 0:
                     for color_key in self.color_count:
                         # distancia_actual = distancia_color(color_key, (blue, green, red))
-                        distancia_actual = self.distancia_color(color_key, (blue, green, red))
+                        distancia_actual = self.distancia_color(
+                            color_key, (blue, green, red))
                         if int(distancia_actual) <= margen and distancia_actual < distancia_minima:
                             color_encontrado = color_key
                             distancia_minima = distancia_actual
-                    
+
                     if color_encontrado is not None:
                         # Incrementa el contador para el color encontrado
                         self.color_count[color_encontrado] += 1
@@ -270,19 +274,31 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
                         # Agrega una nueva entrada al diccionario si no se encontró un color similar
                         self.color_count[(blue, green, red)] = 1
                         color_encontrado = (blue, green, red)
-                
+
                 cv2.rectangle(frame, (xmin, ymin), (xmax, ymax),
                               (blue, green, red), 2)
             i = 0
 
             for color, count in self.color_count.items():
                 cv2.putText(frame, f"Numero total: {count}", (0 + i, 0 + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (color),
-                        1)
+                            1)
                 i += 150
-                
+
         return frame
 
-    
+    def select_color(self, event, x, y, flags, param):
+        global hue
+
+        B = self.frame[y, x][0]
+        G = self.frame[y, x][1]
+        R = self.frame[y, x][2]
+        self.color_search[:] = (B, G, R)
+
+        if event == cv2.EVENT_LBUTTONDOWN:
+            self.color_selected[:] = (B, G, R)
+            hue = self.hsv[y, x][0]
+            print(self.hsv[y, x])
+
 
 if __name__ == "__main__":
     import sys
