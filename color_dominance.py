@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from sklearn.cluster import MiniBatchKMeans
 
 
 def create_bar(height, width, color):
@@ -10,7 +9,7 @@ def create_bar(height, width, color):
     return bar, (red, green, blue)
 
 
-img = cv2.imread('center_of_deteccion.jpg')
+img = cv2.imread('detection_center_image1.jpg')
 height, width, _ = np.shape(img)
 # print(height, width)
 

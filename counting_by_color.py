@@ -64,12 +64,9 @@ def do_image(filename):
 
     cv2.createTrackbar('Lower-Hue', 'Trackbars', 14, 179, nothing)
     cv2.createTrackbar('Upper-Hue', 'Trackbars', 18, 179, nothing)
-
+    og_frame = cv2.imread(filename)
     while True:
-        frame = cv2.imread(
-            filename)
-        cv2.imshow('image', frame)
-
+        frame = og_frame.copy()
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         diff_lower_hue = cv2.getTrackbarPos('Lower-Hue', 'Trackbars')
@@ -136,6 +133,56 @@ def do_video(frame_local):
         cv2.imshow('color_selected', color_selected)
     cv2.destroyAllWindows()
     return frame
+
+
+def select_color_once(event, x, y, flags, param):
+    global hue
+
+    B = frame[y, x][0]
+    G = frame[y, x][1]
+    R = frame[y, x][2]
+    color_search[:] = (B, G, R)
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        color_selected[:] = (B, G, R)
+        hue = hsv[y, x][0]
+        print(hsv[y, x])
+    mouse_callback_triggered = True  # Se activa la variable global
+
+
+def get_mask(frame):
+    # Does the same as above methods, but waits for a click , and does the mask once and returns the frame with the mask applied
+    global hsv
+    global hue
+    cv2.namedWindow('Video')
+    cv2.setMouseCallback('Video', select_color)
+
+    cv2.namedWindow('Trackbars')
+    cv2.resizeWindow('Trackbars', 400, 80)
+
+    cv2.createTrackbar('Lower-Hue', 'Trackbars', 14, 179, nothing)
+    cv2.createTrackbar('Upper-Hue', 'Trackbars', 18, 179, nothing)
+
+    while not mouse_callback_triggered:
+        continue
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    diff_lower_hue = cv2.getTrackbarPos('Lower-Hue', 'Trackbars')
+    diff_upper_hue = cv2.getTrackbarPos('Upper-Hue', 'Trackbars')
+
+    lower_hue = 0 if hue - diff_lower_hue < 0 else hue - diff_lower_hue
+    upper_hue = hue + diff_upper_hue if hue + diff_upper_hue < 179 else 179
+
+    lower_hsv = np.array([lower_hue, 50, 20])
+    upper_hsv = np.array([upper_hue, 255, 255])
+
+    mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
+
+    count = search_contours(mask)
+
+    cv2.putText(frame, f'Total: {count}', (5, 30),
+                font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+    return mask
 
 
 cv2.destroyAllWindows()

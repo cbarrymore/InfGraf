@@ -15,7 +15,8 @@ import pytorch_media_detect
 import torch
 import counting_by_color
 import numpy as np
-import buttonsActions 
+import buttonsActions
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -51,6 +52,9 @@ class Ui_MainWindow(object):
         self.pushButton_7 = QPushButton(self.centralWidget)
         self.pushButton_7.setObjectName(u"pushButton_7")
         self.pushButton_7.setGeometry(QRect(330, 240, 101, 31))
+        self.pushButton_8 = QPushButton(self.centralWidget)
+        self.pushButton_8.setObjectName(u"pushButton_8")
+        self.pushButton_8.setGeometry(QRect(430, 240, 101, 31))
         self.label_3 = QLabel(self.centralWidget)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setGeometry(QRect(70, 50, 281, 151))
@@ -94,6 +98,7 @@ class Ui_MainWindow(object):
             QCoreApplication.translate("MainWindow", u"Contar", None))
     # retranslateUi
 
+
 class MyMainWindow(QMainWindow, Ui_MainWindow):
 
     def __init__(self):
@@ -105,9 +110,11 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_5.clicked.connect(self.activar_object_detection)
         self.pushButton_6.clicked.connect(self.activate_color_clustering)
         self.pushButton_7.clicked.connect(self.activate_counting)
+        self.pushButton_8.clicked.connect(self.activate_pause)
         self.color_clustering = False
         self.object_detection = False
         self.counting = False
+        self.pause = False
 
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
         self.model.cuda()
@@ -120,7 +127,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
 
     def mostrar_contenido(self):
         buttonsActions.action_mostrar_contenido(self)
-        
+
     def activate_color_clustering(self):
         buttonsActions.action_activate_color_clustering(self)
 
@@ -128,4 +135,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         buttonsActions.action_activar_object_detection(self)
 
     def activate_counting(self):
-        buttonsActions.action_activate_counting(self)        
+        buttonsActions.action_activate_counting(self)
+
+    def activate_pause(self):
+        buttonsActions.action_activate_pause(self)
