@@ -1,11 +1,14 @@
 from PySide2.QtCore import QCoreApplication, QRect, QMetaObject, Qt, QUrl
 from PySide2.QtGui import QPixmap, QImage
-from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QMenuBar, QToolBar, QStatusBar, QFileDialog, QLabel
+from PySide2.QtWidgets import QFileDialog, QLabel, QVBoxLayout, QMainWindow, QWidget
 from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
 import cv2
 import pytorch_media_detect
 import torch
 import numpy as np
+from torchvision import transforms
+from PIL import Image
+from videoWindow import VideoWindow
 
 class ArchivoInfo:
     def __init__(self):
@@ -22,7 +25,7 @@ color_search = np.zeros((200, 200, 3), np.uint8)
 color_selected = np.zeros((200, 200, 3), np.uint8)
 hue = 0
 mouse_callback_triggered = False
-
+  
 def action_cargar_imagen(self):
     filename, _ = QFileDialog.getOpenFileName(
         self, "Seleccionar imagen", ".", "Images (*.png *.jpg *.bmp)")
@@ -46,6 +49,9 @@ def action_mostrar_contenido(self):
     if archivo.tipo == "video":
         cap = cv2.VideoCapture(archivo.nombre)
         count_frame = 0
+        video_window = VideoWindow()
+        video_window.show()
+        
         while cap.isOpened():
             ret, frame = cap.read()
             print("tratando frame")
@@ -56,8 +62,11 @@ def action_mostrar_contenido(self):
                 frame = detect_objects(self, frame)
             if self.counting == True:
                 frame = do_video(frame)
-            # if color_principal == True:
-            cv2.imshow("MainWindow", np.squeeze(frame))
+            # if color_principal == True:   
+            video_window.cargar_frame(frame)
+            if not video_window.isVisible():
+                break       
+            #cv2.imshow("MainWindow", np.squeeze(frame))
             count_frame += 1
             if cv2.waitKey(1) > 0:
                 break
@@ -105,17 +114,68 @@ def action_activate_counting(self):
 
 def detect_objects(self, frame):
     # Call the model to detect objects in the frame
-    print("Carlos1")
     detection = self.model(frame)
-    pred = detection.xyxy[0]  # img1 predictions (tensor)
+    
+    """detection.ims = [detection.ims[0] for detection in a]
+    detection.pred = [detection.pred[0] for detection in a]
+    detection.names = detection.names
+    detection.files = [detection.files[0] for detection in a]
+    detection.times = detection.times
+    detection.xyxy = [detection.xyxy[0] for detection in a]
+    detection.xywh = [detection.xywh[0] for detection in a]
+    detection.xyxyn = [detection.xyxyn[0] for detection in a]
+    detection.xywhn = [detection.xywhn[0] for detection in a]
+    detection.n = len(a)
+    detection.t = tuple(x.t / detection.n * 1E3 for x in detection.times)
+    detection.s = tuple(detection.s)"""
 
+    pred = detection.xyxy[0]  # img1 predictions (tensor)
+    #new_pred = filter_person_objects(pred)
+    #print(new_pred)
+    #new_pred.flatten()
+    #print(new_pred)
+    render_results = detection.render()
+    pred = pred[filter_person_objects2(pred)]
+    print(pred.shape)
+    print(pred[:, -1].shape)
+    unique_classes = pred[:, -1].unique().cpu().numpy()
+    print(unique_classes)
+    detection.pred = pred
+    detection.n = len(pred)
+    detection.t = tuple(x.t / detection.n * 1E3 for x in detection.times)
+    detection.s = tuple(detection.s)
     if self.object_detection:
-        print("Carlos3")
-        detection_frame = detection.render()[0]
+        #detection_frame = filter_person_objects(pred)
+        detection_frame = render_results[0]      
     if self.color_clustering == True:
-        print("Carlos2")
         detection_frame = func_color_clustering(pred, frame)
     return detection_frame
+
+def filter_person_objects(pred):
+    filtered_detections = []
+    margin = 10
+    detections = pred[pred[:, 5] == 0]
+    for detection in detections:
+        xmin, ymin, xmax, ymax, conf, class_id = detection
+        width = xmax - xmin
+        height = ymax - ymin          
+
+        if width + margin < height:
+            filtered_detections.append(detection)
+    
+def filter_person_objects2(pred):
+    margin = 10
+    detections = pred[pred[:, 5] == 0]
+    mask = torch.zeros(len(pred), dtype=torch.bool)
+    for detection in detections:
+        xmin, ymin, xmax, ymax, conf, class_id = detection
+        width = xmax - xmin
+        height = ymax - ymin          
+        if width + margin < height:
+            # Establecer el índice correspondiente a True en la máscara
+            mask[(pred[:, 0] == xmin) & (pred[:, 1] == ymin) & (pred[:, 2] == xmax) & (pred[:, 3] == ymax)] = True
+
+    return mask
 
 def distancia_color(color1, color2):
     return sum((c1 - c2) ** 2 for c1, c2 in zip(color1, color2)) ** 0.5
@@ -280,6 +340,12 @@ def do_video(frame_local):
 
     cv2.createTrackbar('Lower-Hue', 'Trackbars', 14, 179, nothing)
     cv2.createTrackbar('Upper-Hue', 'Trackbars', 18, 179, nothing)
+    
+    cv2.imshow('mask', mask)
+    cv2.imshow('image', frame)
+    cv2.imshow('color_search', color_search)
+    cv2.imshow('color_selected', color_selected)
+    
     while not mouse_callback_triggered:
         cv2.imshow('image', frame)
 
@@ -300,10 +366,9 @@ def do_video(frame_local):
 
         cv2.putText(frame, f'Total: {count}', (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2, cv2.LINE_AA)
 
-        cv2.imshow('mask', mask)
-        cv2.imshow('image', frame)
-        cv2.imshow('color_search', color_search)
-        cv2.imshow('color_selected', color_selected)
+        cv2.waitKey(1)
+        
+    
         
     cv2.destroyAllWindows()
     return frame

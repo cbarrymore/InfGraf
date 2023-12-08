@@ -10,7 +10,6 @@ from PySide2.QtCore import QCoreApplication, QRect, QMetaObject, Qt, QUrl
 from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QMenuBar, QToolBar, QStatusBar, QFileDialog, QLabel
 from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
-import cv2
 import pytorch_media_detect
 import torch
 import counting_by_color
@@ -41,16 +40,16 @@ class Ui_MainWindow(object):
         self.label_2.setGeometry(QRect(70, 220, 351, 20))
         self.pushButton_4 = QPushButton(self.centralWidget)
         self.pushButton_4.setObjectName(u"pushButton_4")
-        self.pushButton_4.setGeometry(QRect(10, 240, 101, 31))
+        self.pushButton_4.setGeometry(QRect(10, 340, 101, 31))
         self.pushButton_5 = QPushButton(self.centralWidget)
         self.pushButton_5.setObjectName(u"pushButton_5")
-        self.pushButton_5.setGeometry(QRect(120, 240, 101, 31))
+        self.pushButton_5.setGeometry(QRect(120, 340, 101, 31))
         self.pushButton_6 = QPushButton(self.centralWidget)
         self.pushButton_6.setObjectName(u"pushButton_6")
-        self.pushButton_6.setGeometry(QRect(230, 240, 101, 31))
+        self.pushButton_6.setGeometry(QRect(230, 340, 101, 31))
         self.pushButton_7 = QPushButton(self.centralWidget)
         self.pushButton_7.setObjectName(u"pushButton_7")
-        self.pushButton_7.setGeometry(QRect(330, 240, 101, 31))
+        self.pushButton_7.setGeometry(QRect(330, 340, 101, 31))
         self.label_3 = QLabel(self.centralWidget)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setGeometry(QRect(70, 50, 281, 151))
