@@ -44,7 +44,7 @@ def select_color(event, x, y, flags, param):
         u = yuv[y, x][1]
         v = yuv[y, x][2]
         # check if u and v are close to 127 by a margin of 10
-        if abs(u - 127) <= 10 and abs(v - 127) <= 10:
+        if (_y >= 177 or _y < 77) and abs(u - 127) <= 10 and abs(v - 127) <= 10:
             near_center = True
             # if _y -64 < 127 by a margin of 10
             white = _y > 127
@@ -92,8 +92,9 @@ def nothing(x):
 def filter_colors_yuv(yuv_image, radius):
     global u
     global v
-    distances = np.sqrt(((yuv_image[:, :, 0] - _y) ** 2 + yuv_image[:, :, 1] - u) ** 2 +
-                        (yuv_image[:, :, 2] - v) ** 2)
+    # distances = np.sqrt(((yuv_image[:, :, 0] - _y) ** 2 + yuv_image[:, :, 1] - u) ** 2 +
+    #                     (yuv_image[:, :, 2] - v) ** 2)
+    distances = np.linalg.norm(yuv_image[:, :, 1:3] - (u, v), axis=2)
 
     # Crear una máscara para los píxeles dentro del radio especificado
     mask = distances <= radius
@@ -124,17 +125,19 @@ def do_image(filename):
     cv2.createTrackbar('Upper-v', 'Trackbars_v', 18, 179, nothing)
 
     og_frame = cv2.imread(filename)
+    frame = og_frame.copy()
     while True:
-        frame = og_frame.copy()
         yuv = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV)
-
         if mouse_callback_triggered:
+            mask = filter_colors_yuv(yuv, 200)
             if near_center:
                 if white:
+                    print("white")
                     mask = np.logical_and(
                         yuv[:, :, 0] > 127, np.logical_and(abs(yuv[:, :, 1] - 127) <= 10, abs(yuv[:, :, 2] - 127) <= 10))
                     # if abs(u - 127) <= 10 and abs(v - 127) <= 10:
                 else:
+                    print("black")
                     mask = np.logical_and(
                         yuv[:, :, 0] < 127, np.logical_and(abs(yuv[:, :, 1] - 127) <= 10, abs(yuv[:, :, 2] - 127) <= 10))
             else:
@@ -152,6 +155,7 @@ def do_image(filename):
                         yuv[:, :, 1] < 127, yuv[:, :, 2] > 127)
             mask = mask.astype(np.uint8) * 255
             print(mask)
+            print(mask.shape)
             count = search_contours(mask)
 
             cv2.putText(frame, f'Total: {count}', (5, 30),
@@ -161,40 +165,6 @@ def do_image(filename):
             cv2.waitKey(0)
             quit()
 
-        diff_lower_u = cv2.getTrackbarPos('Lower-u', 'Trackbars')
-        diff_upper_u = cv2.getTrackbarPos('Upper-u', 'Trackbars')
-
-        diff_lower_v = cv2.getTrackbarPos('Lower-v', 'Trackbars_v')
-        diff_upper_v = cv2.getTrackbarPos('Upper-v', 'Trackbars_v')
-
-        lower_u = 0 if u - diff_lower_u < 0 else u - diff_lower_u
-        upper_u = u + diff_upper_u if u + diff_upper_u < 255 else 255
-
-        lower_v = 0 if v - diff_lower_v < 0 else u - diff_lower_v
-        upper_v = v + diff_upper_v if v + diff_upper_v < 255 else 255
-
-        # print (lower_u, upper_u, lower_v, upper_v) with ("lower_u = ...")
-        if mouse_callback_triggered:
-            print("u= ", u, "v = ", v)
-            print("lower_u = ", lower_u, "upper_u = ", upper_u)
-            print("lower_v = ", lower_v, "upper_v = ", upper_v)
-            mouse_callback_triggered = False
-
-        lower_uv_yuv = np.array([0, lower_u, lower_v])
-        upper_uv_yuv = np.array([255, upper_u, upper_v])
-
-        u_mask = cv2.inRange(yuv, lower_uv_yuv, upper_uv_yuv)
-
-        v_mask = cv2.inRange(yuv, lower_uv_yuv, upper_uv_yuv)
-
-        # cv2.bitwise_and(u_mask, v_mask, mask)
-        # count = search_contours(mask)
-
-        # cv2.putText(frame, f'Total: {count}', (5, 30),
-        #             font, 1, (255, 0, 255), 2, cv2.LINE_AA)
-
-        # cv2.imshow('mask_u', u_mask)
-        # cv2.imshow('mask_v', v_mask)
         cv2.imshow('image', frame)
         cv2.imshow('color_search', color_search)
         cv2.imshow('color_selected', color_selected)

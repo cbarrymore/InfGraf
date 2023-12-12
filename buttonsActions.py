@@ -172,16 +172,23 @@ def func_color_clustering(pred, frame):
     margen = 100
     if count_frame % 5 == 0:
         color_count = {}
+    frame_clone = frame.copy()
     for det in pred:
         k += 1
         xmin, ymin, xmax, ymax, conf, class_id = det
         xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
         detection_center_image = get_center_of_detection(
-            xmin, ymin, xmax, ymax, frame)
+            xmin, ymin, xmax, ymax, frame_clone)
+        # mask with the detection
+        mask = np.zeros(frame.shape[:2], np.uint8)
+        mask[ymin:ymax, xmin:xmax] = 255
+        detection_rectangle = cv2.bitwise_and(
+            frame_clone, frame_clone, mask=mask)
+        cv2.imshow("detection_rectangle", detection_rectangle)
         cv2.imshow("detection_center_image", detection_center_image)
-        cv2.imwrite(f"detection_center_image{k}.jpg", detection_center_image)
-
         cv2.waitKey(0)
+        cv2.destroyWindow("detection_rectangle")
+        cv2.destroyWindow("detection_center_image")
         # Sacamos las dimensiones del centro de deteccion
         height, width, _ = np.shape(detection_center_image)
         # Hacemos clustering
