@@ -62,6 +62,7 @@ def select_color(event, x, y, flags, param):
 
 
 def search_contours(mask):
+    global frame
     contours_count = 0
     contours, hierarchy = cv2.findContours(
         mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -71,17 +72,6 @@ def search_contours(mask):
         if 200 < area < 10000:
             cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)
             contours_count += 1
-
-            M = cv2.moments(contour)
-            if M["m00"] != 0:
-                cX = int(M["m10"] / M["m00"])
-                cY = int(M["m01"] / M["m00"])
-            else:
-                cX, cY = 0, 0
-            cv2.circle(frame, (cX, cY), 3, (255, 255, 255), -1)
-            cv2.putText(frame, f"{contours_count}", (cX - 25, cY - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255),
-                        2)
-
     return contours_count
 
 
@@ -106,6 +96,12 @@ def do_image(filename):
     global frame
     global yuv
     global mouse_callback_triggered
+    global near_center
+    global white
+    global u_v_positive
+    global u_v_negative
+    global u_positive_v_negative
+    global u_negative_v_positive
     cv2.namedWindow('image')
     cv2.setMouseCallback('image', select_color)
 
@@ -126,10 +122,11 @@ def do_image(filename):
 
     og_frame = cv2.imread(filename)
     frame = og_frame.copy()
+    mask = None
     while True:
         yuv = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV)
         if mouse_callback_triggered:
-            mask = filter_colors_yuv(yuv, 200)
+            frame = og_frame.copy()
             if near_center:
                 if white:
                     print("white")
@@ -139,7 +136,7 @@ def do_image(filename):
                 else:
                     print("black")
                     mask = np.logical_and(
-                        yuv[:, :, 0] < 127, np.logical_and(abs(yuv[:, :, 1] - 127) <= 10, abs(yuv[:, :, 2] - 127) <= 10))
+                        yuv[:, :, 0] < 127, np.logical_and(abs(yuv[:, :, 1] - 127) <= 20, abs(yuv[:, :, 2] - 127) <= 20))
             else:
                 if u_v_positive:
                     mask = np.logical_and(
@@ -153,18 +150,19 @@ def do_image(filename):
                 else:
                     mask = np.logical_and(
                         yuv[:, :, 1] < 127, yuv[:, :, 2] > 127)
+            mouse_callback_triggered = False
+            white = False
+            near_center = False
+            u_v_negative = False
+            u_v_positive = False
+            u_positive_v_negative = False
+            u_negative_v_positive = False
             mask = mask.astype(np.uint8) * 255
-            print(mask)
-            print(mask.shape)
             count = search_contours(mask)
-
             cv2.putText(frame, f'Total: {count}', (5, 30),
                         font, 1, (255, 0, 255), 2, cv2.LINE_AA)
-            cv2.imshow('mask', mask)
-            cv2.imshow('image', frame)
-            cv2.waitKey(0)
-            quit()
 
+            cv2.imshow('mask', mask)
         cv2.imshow('image', frame)
         cv2.imshow('color_search', color_search)
         cv2.imshow('color_selected', color_selected)

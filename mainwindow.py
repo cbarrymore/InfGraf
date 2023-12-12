@@ -22,7 +22,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(600, 600)
+        MainWindow.resize(406, 390)
         self.centralWidget = QWidget(MainWindow)
         self.centralWidget.setObjectName(u"centralWidget")
         self.pushButton = QPushButton(self.centralWidget)
@@ -30,38 +30,47 @@ class Ui_MainWindow(object):
         self.pushButton.setGeometry(QRect(-250, 190, 75, 23))
         self.pushButton_2 = QPushButton(self.centralWidget)
         self.pushButton_2.setObjectName(u"pushButton_2")
-        self.pushButton_2.setGeometry(QRect(10, 10, 101, 31))
+        self.pushButton_2.setGeometry(QRect(20, 10, 161, 31))
         self.pushButton_3 = QPushButton(self.centralWidget)
         self.pushButton_3.setObjectName(u"pushButton_3")
-        self.pushButton_3.setGeometry(QRect(120, 10, 101, 31))
-        self.label = QLabel(self.centralWidget)
-        self.label.setObjectName(u"label")
-        self.label.setGeometry(QRect(20, 220, 47, 13))
-        self.label_2 = QLabel(self.centralWidget)
-        self.label_2.setObjectName(u"label_2")
-        self.label_2.setGeometry(QRect(70, 220, 351, 20))
+        self.pushButton_3.setGeometry(QRect(200, 10, 161, 31))
         self.pushButton_4 = QPushButton(self.centralWidget)
         self.pushButton_4.setObjectName(u"pushButton_4")
-        self.pushButton_4.setGeometry(QRect(10, 240, 101, 31))
+        self.pushButton_4.setGeometry(QRect(40, 170, 101, 31))
         self.pushButton_5 = QPushButton(self.centralWidget)
         self.pushButton_5.setObjectName(u"pushButton_5")
-        self.pushButton_5.setGeometry(QRect(120, 240, 101, 31))
+        self.pushButton_5.setGeometry(QRect(40, 230, 101, 31))
         self.pushButton_6 = QPushButton(self.centralWidget)
         self.pushButton_6.setObjectName(u"pushButton_6")
-        self.pushButton_6.setGeometry(QRect(230, 240, 101, 31))
+        self.pushButton_6.setGeometry(QRect(140, 50, 101, 31))
         self.pushButton_7 = QPushButton(self.centralWidget)
         self.pushButton_7.setObjectName(u"pushButton_7")
-        self.pushButton_7.setGeometry(QRect(330, 240, 101, 31))
-        self.pushButton_8 = QPushButton(self.centralWidget)
-        self.pushButton_8.setObjectName(u"pushButton_8")
-        self.pushButton_8.setGeometry(QRect(430, 240, 101, 31))
+        self.pushButton_7.setGeometry(QRect(140, 90, 101, 31))
+        self.label = QLabel(self.centralWidget)
+        self.label.setObjectName(u"label")
+        self.label.setGeometry(QRect(50, 150, 91, 16))
         self.label_3 = QLabel(self.centralWidget)
         self.label_3.setObjectName(u"label_3")
-        self.label_3.setGeometry(QRect(70, 50, 281, 151))
+        self.label_3.setGeometry(QRect(30, 210, 131, 16))
+        self.label_4 = QLabel(self.centralWidget)
+        self.label_4.setObjectName(u"label_4")
+        self.label_4.setGeometry(QRect(220, 150, 151, 20))
+        self.pushButton_8 = QPushButton(self.centralWidget)
+        self.pushButton_8.setObjectName(u"pushButton_8")
+        self.pushButton_8.setGeometry(QRect(240, 170, 101, 31))
+        self.pushButton_9 = QPushButton(self.centralWidget)
+        self.pushButton_9.setObjectName(u"pushButton_9")
+        self.pushButton_9.setGeometry(QRect(240, 230, 101, 31))
+        self.label_2 = QLabel(self.centralWidget)
+        self.label_2.setObjectName(u"label_2")
+        self.label_2.setGeometry(QRect(130, 280, 141, 20))
+        self.pushButton_10 = QPushButton(self.centralWidget)
+        self.pushButton_10.setObjectName(u"pushButton_10")
+        self.pushButton_10.setGeometry(QRect(140, 300, 101, 31))
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QMenuBar(MainWindow)
         self.menuBar.setObjectName(u"menuBar")
-        self.menuBar.setGeometry(QRect(0, 0, 431, 21))
+        self.menuBar.setGeometry(QRect(0, 0, 406, 21))
         MainWindow.setMenuBar(self.menuBar)
         self.mainToolBar = QToolBar(MainWindow)
         self.mainToolBar.setObjectName(u"mainToolBar")
@@ -84,18 +93,28 @@ class Ui_MainWindow(object):
             "MainWindow", u"Cargar imagen", None))
         self.pushButton_3.setText(QCoreApplication.translate(
             "MainWindow", u"Cargar video", None))
-        self.label.setText(QCoreApplication.translate(
-            "MainWindow", u"Nombre:", None))
-        self.label_2.setText("")
         self.pushButton_4.setText(QCoreApplication.translate(
-            "MainWindow", u"Ver contenido", None))
+            "MainWindow", u"Detectar", None))
         self.pushButton_5.setText(
-            QCoreApplication.translate("MainWindow", u"Detectar", None))
-        self.label_3.setText("")
-        self.pushButton_6.setText(
-            QCoreApplication.translate("MainWindow", u"Colores", None))
+            QCoreApplication.translate("MainWindow", u"Color", None))
+        self.pushButton_6.setText(QCoreApplication.translate(
+            "MainWindow", u"Ver contenido", None))
         self.pushButton_7.setText(
-            QCoreApplication.translate("MainWindow", u"Contar", None))
+            QCoreApplication.translate("MainWindow", u"Pausar", None))
+        self.label.setText(QCoreApplication.translate(
+            "MainWindow", u"Detectar objetos:", None))
+        self.label_3.setText(QCoreApplication.translate(
+            "MainWindow", u"Conteo de objetos (RGB)", None))
+        self.label_4.setText(QCoreApplication.translate(
+            "MainWindow", u"Detecci\u00f3n de objetos por color", None))
+        self.pushButton_8.setText(QCoreApplication.translate(
+            "MainWindow", u"Formato HSV", None))
+        self.pushButton_9.setText(QCoreApplication.translate(
+            "MainWindow", u"Formato YUV", None))
+        self.label_2.setText(QCoreApplication.translate(
+            "MainWindow", u"Otras implementaciones", None))
+        self.pushButton_10.setText(QCoreApplication.translate(
+            "MainWindow", u"Cuantificaci\u00f3n", None))
     # retranslateUi
 
 
@@ -106,16 +125,21 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.pushButton_2.clicked.connect(self.cargar_imagen)
         self.pushButton_3.clicked.connect(self.cargar_video)
-        self.pushButton_4.clicked.connect(self.mostrar_contenido)
-        self.pushButton_5.clicked.connect(self.activar_object_detection)
-        self.pushButton_6.clicked.connect(self.activate_color_clustering)
-        self.pushButton_7.clicked.connect(self.activate_counting)
-        self.pushButton_8.clicked.connect(self.activate_pause)
+        self.pushButton_4.clicked.connect(self.activar_object_detection)
+        self.pushButton_5.clicked.connect(self.activate_color_counting)
+        self.pushButton_6.clicked.connect(self.mostrar_contenido)
+        self.pushButton_7.clicked.connect(self.activate_pause)
+        self.pushButton_8.clicked.connect(self.activate_counting_HSV)
+        self.pushButton_9.clicked.connect(self.activate_counting_YUV)
+        self.pushButton_10.clicked.connect(self.activate_quantization)
+
         self.color_clustering = False
         self.object_detection = False
-        self.counting = False
+        self.color_counting = False
+        self.counting_HSV = False
+        self.counting_YUV = False
+        self.quantization = False
         self.pause = False
-
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
         self.model.cuda()
 
@@ -128,14 +152,20 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
     def mostrar_contenido(self):
         buttonsActions.action_mostrar_contenido(self)
 
-    def activate_color_clustering(self):
-        buttonsActions.action_activate_color_clustering(self)
+    def activate_color_counting(self):
+        buttonsActions.action_activate_color_counting(self)
 
     def activar_object_detection(self):
         buttonsActions.action_activar_object_detection(self)
 
-    def activate_counting(self):
-        buttonsActions.action_activate_counting(self)
+    def activate_counting_HSV(self):
+        buttonsActions.action_activate_counting_HSV(self)
+
+    def activate_counting_YUV(self):
+        buttonsActions.action_activate_counting_YUV(self)
+
+    def activate_quantization(self):
+        buttonsActions.action_activate_quantization(self)
 
     def activate_pause(self):
-        buttonsActions.action_activate_pause(self)
+        buttonsActions.action_pause(self)
