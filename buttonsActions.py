@@ -46,7 +46,7 @@ K = 8
 trackbar_changed = False
 cargada = False
 ultimo_frame = None
-
+video_window = None
 
 def action_cargar_imagen(self):
     filename, _ = QFileDialog.getOpenFileName(
@@ -71,6 +71,11 @@ def action_mostrar_contenido(self):
     global count_frame
     global cargada
     global ultimo_frame
+    global video_window
+    
+    if video_window == None or not video_window.isVisible():
+        video_window = VideoWindow()
+        video_window.show()
 
     if archivo.tipo == "video":
         cap = cv2.VideoCapture(archivo.nombre)
@@ -78,11 +83,9 @@ def action_mostrar_contenido(self):
         ret, frame = cap.read()
 
         # Crea una ventana con un nombre
-        cv2.namedWindow("Video")
+        #cv2.namedWindow("Video")
 
         count_frame = 0
-        video_window = VideoWindow()
-        video_window.show()
         while cap.isOpened():
             ret, frame = cap.read()
             ultimo_frame = frame.copy()
@@ -91,32 +94,36 @@ def action_mostrar_contenido(self):
             if self.object_detection == True:
                 # call a function to detect objects
                 frame = detect_objects(self, frame)
-            # if color_principal == True:
-            video_window.cargar_frame(frame)
+            if self.counting_HSV == True:
+                do_image(frame)
+                self.counting_HSV = False
+            if self.counting_YUV == True:
+                do_image_YUV(frame)
+                self.counting_YUV = False
+            if self.quantization == True:
+                quantization(self, frame)
+                self.quantization = False
+            video_window.cargar_frame(frame)          
             if not video_window.isVisible():
                 break
-            # cv2.imshow("MainWindow", np.squeeze(frame))
+            
             count_frame += 1
             if cv2.waitKey(1) > 0:
                 break
         cap.release()
     else:
+        img = cv2.imread(archivo.nombre)
         if self.counting_HSV == True:
-            do_image(archivo.nombre)
+            do_image(img)
         if self.counting_YUV == True:
-            do_image_YUV(archivo.nombre)
+            do_image_YUV(img)
         if self.quantization == True:
-            quantization(self, cv2.imread(archivo.nombre))
+            quantization(self, img)
         if not self.counting_HSV and not self.counting_YUV and not self.quantization:
-            video_window = VideoWindow()
-            video_window.show()
-            img = cv2.imread(archivo.nombre)
             if self.object_detection == True:
                 # call a function to detect objects
                 img = detect_objects(self, img)
             video_window.cargar_frame(img)
-            timer = QTimer(self)
-            timer.timeout.connect(video_window.isVisible())
 
 
 def crear_nuevo_archivo(nombre):
@@ -311,7 +318,7 @@ def search_contours(mask):
 
     for contour in contours:
         area = cv2.contourArea(contour)
-        if 200 < area < 10000:
+        if 200 < area:
             cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)
             contours_count += 1
     return contours_count
@@ -321,9 +328,11 @@ def nothing(x):
     pass
 
 
-def do_image(filename):
+def do_image(image):
     global frame
     global hsv
+    global video_window
+    
     cv2.namedWindow('image')
     cv2.setMouseCallback('image', select_color)
 
@@ -332,11 +341,9 @@ def do_image(filename):
 
     cv2.createTrackbar('Lower-Hue', 'Trackbars', 14, 179, nothing)
     cv2.createTrackbar('Upper-Hue', 'Trackbars', 18, 179, nothing)
-    og_frame = cv2.imread(filename)
-    video_window = VideoWindow()
-    video_window.show()
+    
     while True:
-        frame = og_frame.copy()
+        frame = image.copy()
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         diff_lower_hue = cv2.getTrackbarPos('Lower-Hue', 'Trackbars')
@@ -435,19 +442,9 @@ def search_contours_YUV(mask):
 
     for contour in contours:
         area = cv2.contourArea(contour)
-        if 200 < area < 10000:
+        if 200 < area:
             cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)
             contours_count += 1
-
-            M = cv2.moments(contour)
-            if M["m00"] != 0:
-                cX = int(M["m10"] / M["m00"])
-                cY = int(M["m01"] / M["m00"])
-            else:
-                cX, cY = 0, 0
-            cv2.circle(frame, (cX, cY), 3, (255, 255, 255), -1)
-            cv2.putText(frame, f"{contours_count}", (cX - 25, cY - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255),
-                        2)
 
     return contours_count
 
@@ -464,7 +461,7 @@ def filter_colors_YUV(yuv_image, radius):
     return mask
 
 
-def do_image_YUV(filename):
+def do_image_YUV(image):
     global frame
     global yuv
     global mouse_callback_triggered
@@ -474,31 +471,17 @@ def do_image_YUV(filename):
     global u_v_negative
     global u_positive_v_negative
     global u_negative_v_positive
+    global video_window
+    
     cv2.namedWindow('image')
-    cv2.setMouseCallback('image', select_color)
+    cv2.setMouseCallback('image', select_color_YUV)
 
-    cv2.namedWindow('Trackbars')
-    cv2.resizeWindow('Trackbars', 400, 80)
-
-    cv2.createTrackbar('Lower-u', 'Trackbars', 14, 179, nothing)
-    cv2.createTrackbar('Upper-u', 'Trackbars', 18, 179, nothing)
-
-    cv2.createTrackbar('Lower-v', 'Trackbars', 14, 179, nothing)
-    cv2.createTrackbar('Upper-v', 'Trackbars', 18, 179, nothing)
-
-    cv2.namedWindow('Trackbars_v')
-    cv2.resizeWindow('Trackbars_v', 400, 80)
-
-    cv2.createTrackbar('Lower-v', 'Trackbars_v', 14, 179, nothing)
-    cv2.createTrackbar('Upper-v', 'Trackbars_v', 18, 179, nothing)
-
-    og_frame = cv2.imread(filename)
-    frame = og_frame.copy()
+    frame = image.copy()
     mask = None
     while True:
         yuv = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV)
         if mouse_callback_triggered:
-            frame = og_frame.copy()
+            frame = image.copy()
             if near_center:
                 if white:
                     print("white")
@@ -530,11 +513,12 @@ def do_image_YUV(filename):
             u_positive_v_negative = False
             u_negative_v_positive = False
             mask = mask.astype(np.uint8) * 255
-            count = search_contours(mask)
+            count = search_contours_YUV(mask)
             cv2.putText(frame, f'Total: {count}', (5, 30),
                         font, 1, (255, 0, 255), 2, cv2.LINE_AA)
 
             cv2.imshow('mask', mask)
+        video_window.cargar_frame(frame)
         cv2.imshow('image', frame)
         cv2.imshow('color_search', color_search)
         cv2.imshow('color_selected', color_selected)
@@ -560,10 +544,11 @@ def on_trackbar_change(value):
 
 def quantization(self, image):
     global trackbar_changed
+    global video_window
     cv2.namedWindow('Trackbars')
     cv2.resizeWindow('Trackbars', 400, 80)
 
-    cv2.createTrackbar('K', 'Trackbars', K, 20, on_trackbar_change)
+    cv2.createTrackbar('K', 'Trackbars', K, 64, on_trackbar_change)
 
     Z = image.reshape((-1, 3))
     # convert to np.float32
@@ -581,6 +566,7 @@ def quantization(self, image):
             print(label)
             res = center[label.flatten()]
             res2 = res.reshape((image.shape))
+            video_window.cargar_frame(res2)
             cv2.imshow('res2', res2)
             trackbar_changed = False
 
