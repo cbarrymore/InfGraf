@@ -19,7 +19,7 @@ cv2.resizeWindow('Trackbars', 400, 80)
 cv2.createTrackbar('K', 'Trackbars', K, 20, on_trackbar_change)
 
 img = cv2.imread(
-    'bb1a9c9f-a09e-42d6-8fe9-8f9461790878_16-9-discover-aspect-ratio_default_0.jpg')
+    'istockphoto-647672126-612x612.jpg')
 Z = img.reshape((-1, 3))
 # convert to np.float32
 Z = np.float32(Z)

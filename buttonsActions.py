@@ -1,4 +1,4 @@
-from PySide2.QtCore import QCoreApplication, QRect, QMetaObject, Qt, QUrl
+from PySide2.QtCore import QCoreApplication, QRect, QMetaObject, Qt, QUrl, QTimer
 from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QMenuBar, QToolBar, QStatusBar, QFileDialog, QLabel
 from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
@@ -6,6 +6,8 @@ import cv2
 import pytorch_media_detect
 import torch
 import numpy as np
+from videoWindow import VideoWindow
+import time
 
 class ArchivoInfo:
     def __init__(self):
@@ -14,6 +16,7 @@ class ArchivoInfo:
 
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
 flags = cv2.KMEANS_RANDOM_CENTERS
+font = cv2.FONT_HERSHEY_SIMPLEX
 
 archivo = ArchivoInfo()
 count_frame = 0
@@ -21,8 +24,26 @@ color_count = {}
 color_search = np.zeros((200, 200, 3), np.uint8)
 color_selected = np.zeros((200, 200, 3), np.uint8)
 hue = 0
+saturation = 0
+value = 0
 mouse_callback_triggered = False
+white_flag = False
+black_flag = False
 
+hue = 0
+_y = 0
+u = 0
+v = 0
+u_v_positive = False
+u_v_negative = False
+u_positive_v_negative = False
+u_negative_v_positive = False
+near_center = False
+white = False
+K = 8
+trackbar_changed = False
+cargada = False
+ultimo_frame = None
 def action_cargar_imagen(self):
     filename, _ = QFileDialog.getOpenFileName(
         self, "Seleccionar imagen", ".", "Images (*.png *.jpg *.bmp)")
@@ -42,35 +63,48 @@ def action_cargar_video(self):
 
 def action_mostrar_contenido(self):
     global count_frame
+    global cargada
+    global ultimo_frame
     
     if archivo.tipo == "video":
         cap = cv2.VideoCapture(archivo.nombre)
         count_frame = 0
+        video_window = VideoWindow()
+        video_window.show()
         while cap.isOpened():
             ret, frame = cap.read()
-            print("tratando frame")
+            ultimo_frame = frame.copy()
             if not ret:
                 break
             if self.object_detection == True:
                 # call a function to detect objects
                 frame = detect_objects(self, frame)
-            if self.counting == True:
-                frame = do_video(frame)
             # if color_principal == True:
-            cv2.imshow("MainWindow", np.squeeze(frame))
+            video_window.cargar_frame(frame)
+            if not video_window.isVisible():
+                break 
+            #cv2.imshow("MainWindow", np.squeeze(frame))
             count_frame += 1
             if cv2.waitKey(1) > 0:
                 break
         cap.release()
     else:
-        if self.counting == True:
+        if self.counting_HSV == True:
             do_image(archivo.nombre)
-        else:
+        if self.counting_YUV == True:
+            do_image_YUV(archivo.nombre)
+        if self.quantization == True:
+            quantization(self, cv2.imread(archivo.nombre))
+        if not self.counting_HSV and not self.counting_YUV and not self.quantization:
+            video_window = VideoWindow()
+            video_window.show()
             img = cv2.imread(archivo.nombre)
             if self.object_detection == True:
                 # call a function to detect objects
-                img = detect_objects(self, img)
-            cv2.imshow("MainWindow", np.squeeze(img))
+                img = detect_objects(self, img)  
+            video_window.cargar_frame(img)
+            timer = QTimer(self)
+            timer.timeout.connect(video_window.isVisible())           
 
 def crear_nuevo_archivo(nombre):
     archivo.nombre = nombre
@@ -79,11 +113,11 @@ def crear_nuevo_archivo(nombre):
     else:
         archivo.tipo = "video"
 
-def action_activate_color_clustering(self):
-    if self.color_clustering == True:
-        self.color_clustering = False
+def action_activate_color_counting(self):
+    if self.color_counting == True:
+        self.color_counting = False
     else:
-        self.color_clustering = True
+        self.color_counting = True
     if archivo.tipo == "imagen":
         self.mostrar_contenido()
 
@@ -95,32 +129,63 @@ def action_activar_object_detection(self):
     if archivo.tipo == "imagen":
         self.mostrar_contenido()
 
-def action_activate_counting(self):
-    if self.counting == True:
-        self.counting = False
+def action_activate_counting_HSV(self):
+    if self.counting_HSV == True:
+        self.counting_HSV = False
     else:
-        self.counting = True
+        self.counting_HSV = True
+        self.counting_YUV = False
+        self.quantization = False
+    if archivo.tipo == "imagen":
+        self.mostrar_contenido()
+
+
+def action_activate_counting_YUV(self):
+    if self.counting_YUV == True:
+        self.counting_YUV = False
+    else:
+        self.counting_YUV = True
+        self.counting_HSV = False
+        self.quantization = False
+    if archivo.tipo == "imagen":
+        self.mostrar_contenido()
+
+def action_activate_quantization(self):
+    if self.quantization == True:
+        self.quantization = False
+    else:
+        self.quantization = True
+        self.counting_HSV = False
+        self.counting_YUV = False
+    if archivo.tipo == "imagen":
+        self.mostrar_contenido()
+
+def action_pause(self):
+    global cargada
+    
+    if self.pause == True:
+        self.pause = False
+    else:
+        self.pause = True
+        cargada = False
     if archivo.tipo == "imagen":
         self.mostrar_contenido()
 
 def detect_objects(self, frame):
     # Call the model to detect objects in the frame
-    print("Carlos1")
     detection = self.model(frame)
     pred = detection.xyxy[0]  # img1 predictions (tensor)
 
     if self.object_detection:
-        print("Carlos3")
         detection_frame = detection.render()[0]
-    if self.color_clustering == True:
-        print("Carlos2")
-        detection_frame = func_color_clustering(pred, frame)
+    if self.color_counting == True:
+        detection_frame = func_color_counting(pred, frame)
     return detection_frame
 
 def distancia_color(color1, color2):
     return sum((c1 - c2) ** 2 for c1, c2 in zip(color1, color2)) ** 0.5
 
-def func_color_clustering(pred, frame):
+def func_color_counting(pred, frame):
     global color_count
     global count_frame
     
@@ -184,11 +249,115 @@ def func_color_clustering(pred, frame):
             
     return frame
 
+################### Formato HSV ################################
+
 def select_color(event, x, y, flags, param):
     global hue
-    global color_search
-    global color_selected
-    global mouse_callback_triggered
+    global saturation
+    global value
+    global white_flag
+    global black_flag
+
+    B = frame[y, x][0]
+    G = frame[y, x][1]
+    R = frame[y, x][2]
+    color_search[:] = (B, G, R)
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        white_flag = False
+        black_flag = False
+        color_selected[:] = (B, G, R)
+        hue = hsv[y, x][0]
+        saturation = hsv[y, x][1]
+        value = hsv[y, x][2]
+        if saturation <= 40 and value >= 100:
+            white_flag = True
+        elif value <= 40:
+            black_flag = True
+
+        print(hsv[y, x])
+    mouse_callback_triggered = True  # Se activa la variable global
+
+
+def search_contours(mask):
+    contours_count = 0
+    contours, hierarchy = cv2.findContours(
+        mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if 200 < area < 10000:
+            cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)
+            contours_count += 1
+    return contours_count
+
+def nothing(x):
+    pass
+
+def do_image(filename):
+    global frame
+    global hsv
+    cv2.namedWindow('image')
+    cv2.setMouseCallback('image', select_color)
+
+    cv2.namedWindow('Trackbars')
+    cv2.resizeWindow('Trackbars', 400, 80)
+
+    cv2.createTrackbar('Lower-Hue', 'Trackbars', 14, 179, nothing)
+    cv2.createTrackbar('Upper-Hue', 'Trackbars', 18, 179, nothing)
+    og_frame = cv2.imread(filename)
+    while True:
+        frame = og_frame.copy()
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        diff_lower_hue = cv2.getTrackbarPos('Lower-Hue', 'Trackbars')
+        diff_upper_hue = cv2.getTrackbarPos('Upper-Hue', 'Trackbars')
+
+        lower_hue = 0 if hue - diff_lower_hue < 0 else hue - diff_lower_hue
+        upper_hue = hue + diff_upper_hue if hue + diff_upper_hue < 179 else 179
+
+        lower_saturation = 50
+        upper_saturation = 255
+        lower_value = 20
+        upper_value = 255
+
+        if white_flag:
+            lower_saturation = 0
+            upper_saturation = 40
+            lower_value = 100
+            upper_value = 255
+        elif black_flag:
+            lower_saturation = 0
+            upper_saturation = 255
+            lower_value = 0
+            upper_value = 40
+        if white_flag or black_flag:
+            lower_hue = 0
+            upper_hue = 179
+        lower_hsv = np.array([lower_hue, lower_saturation, lower_value])
+        upper_hsv = np.array([upper_hue, upper_saturation, upper_value])
+
+        mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
+
+        count = search_contours(mask)
+
+        cv2.putText(frame, f'Total: {count}', (5, 30),
+                    font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+
+        cv2.imshow('mask', mask)
+        video_window = VideoWindow()
+        video_window.show()
+        video_window.cargar_frame(frame)
+        #cv2.imshow('image', frame)
+        cv2.imshow('color_search', color_search)
+        cv2.imshow('color_selected', color_selected)
+
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
+    cv2.destroyAllWindows()
+    
+def select_color_once(event, x, y, flags, param):
+    global hue
 
     B = frame[y, x][0]
     G = frame[y, x][1]
@@ -199,9 +368,85 @@ def select_color(event, x, y, flags, param):
         color_selected[:] = (B, G, R)
         hue = hsv[y, x][0]
         print(hsv[y, x])
-    mouse_callback_triggered = True  # Se activa la variable global
+    mouse_callback_triggered = True
+    
+def get_mask(frame):
+    # Does the same as above methods, but waits for a click , and does the mask once and returns the frame with the mask applied
+    global hsv
+    global hue
+    cv2.namedWindow('Video')
+    cv2.setMouseCallback('Video', select_color)
 
-def search_contours(mask):
+    cv2.namedWindow('Trackbars')
+    cv2.resizeWindow('Trackbars', 400, 80)
+
+    cv2.createTrackbar('Lower-Hue', 'Trackbars', 14, 179, nothing)
+    cv2.createTrackbar('Upper-Hue', 'Trackbars', 18, 179, nothing)
+
+    while not mouse_callback_triggered:
+        continue
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    diff_lower_hue = cv2.getTrackbarPos('Lower-Hue', 'Trackbars')
+    diff_upper_hue = cv2.getTrackbarPos('Upper-Hue', 'Trackbars')
+
+    lower_hue = 0 if hue - diff_lower_hue < 0 else hue - diff_lower_hue
+    upper_hue = hue + diff_upper_hue if hue + diff_upper_hue < 179 else 179
+
+    lower_hsv = np.array([lower_hue, 50, 20])
+    upper_hsv = np.array([upper_hue, 255, 255])
+
+    mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
+
+    count = search_contours(mask)
+
+    cv2.putText(frame, f'Total: {count}', (5, 30),
+                font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+    return mask
+
+################### Formato YUV ################################
+
+def select_color_YUV(event, x, y, flags, param):
+    global hue
+    global _y
+    global u
+    global mouse_callback_triggered
+    global u_v_positive
+    global u_v_negative
+    global u_positive_v_negative
+    global u_negative_v_positive
+    global near_center
+    global white
+    global v
+    B = frame[y, x][0]
+    G = frame[y, x][1]
+    R = frame[y, x][2]
+    color_search[:] = (B, G, R)
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        color_selected[:] = (B, G, R)
+        _y = yuv[y, x][0]
+        u = yuv[y, x][1]
+        v = yuv[y, x][2]
+        # check if u and v are close to 127 by a margin of 10
+        if (_y >= 127 or _y < 127) and abs(u - 127) <= 10 and abs(v - 127) <= 10:
+            near_center = True
+            # if _y -64 < 127 by a margin of 10
+            white = _y > 127
+
+        if u > 127 and v > 127:
+            u_v_positive = True
+        elif u < 127 and v > 127:
+            u_negative_v_positive = True
+        elif u > 127 and v < 127:
+            u_positive_v_negative = True
+        else:
+            u_v_negative = True
+        print(yuv[y, x])
+        mouse_callback_triggered = True  # Se activa la variable global
+
+
+def search_contours_YUV(mask):
     contours_count = 0
     contours, hierarchy = cv2.findContours(
         mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -219,91 +464,158 @@ def search_contours(mask):
             else:
                 cX, cY = 0, 0
             cv2.circle(frame, (cX, cY), 3, (255, 255, 255), -1)
-            cv2.putText(frame, f"{contours_count}", (cX - 25, cY - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            cv2.putText(frame, f"{contours_count}", (cX - 25, cY - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255),
+                        2)
 
     return contours_count
 
-def nothing(x):
-    pass
+def filter_colors_YUV(yuv_image, radius):
+    global u
+    global v
+    distances = np.sqrt(((yuv_image[:, :, 0] - _y) ** 2 + yuv_image[:, :, 1] - u) ** 2 +
+                        (yuv_image[:, :, 2] - v) ** 2)
 
-def do_image(filename):
+    # Crear una máscara para los píxeles dentro del radio especificado
+    mask = distances <= radius
+
+    return mask
+
+
+def do_image_YUV(filename):
     global frame
-    global hsv
+    global yuv
+    global mouse_callback_triggered
     cv2.namedWindow('image')
-    cv2.setMouseCallback('image', select_color)
+    cv2.setMouseCallback('image', select_color_YUV)
 
     cv2.namedWindow('Trackbars')
     cv2.resizeWindow('Trackbars', 400, 80)
 
-    cv2.createTrackbar('Lower-Hue', 'Trackbars', 14, 179, nothing)
-    cv2.createTrackbar('Upper-Hue', 'Trackbars', 18, 179, nothing)
+    cv2.createTrackbar('Lower-u', 'Trackbars', 14, 179, nothing)
+    cv2.createTrackbar('Upper-u', 'Trackbars', 18, 179, nothing)
 
+    cv2.createTrackbar('Lower-v', 'Trackbars', 14, 179, nothing)
+    cv2.createTrackbar('Upper-v', 'Trackbars', 18, 179, nothing)
+
+    cv2.namedWindow('Trackbars_v')
+    cv2.resizeWindow('Trackbars_v', 400, 80)
+
+    cv2.createTrackbar('Lower-v', 'Trackbars_v', 14, 179, nothing)
+    cv2.createTrackbar('Upper-v', 'Trackbars_v', 18, 179, nothing)
+
+    og_frame = cv2.imread(filename)
     while True:
-        frame = cv2.imread(
-            filename)
-        cv2.imshow('image', frame)
+        frame = og_frame.copy()
+        yuv = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV)
 
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        if mouse_callback_triggered:
+            if near_center:
+                if white:
+                    mask = np.logical_and(
+                        yuv[:, :, 0] > 127, np.logical_and(abs(yuv[:, :, 1] - 127) <= 10, abs(yuv[:, :, 2] - 127) <= 10))
+                    # if abs(u - 127) <= 10 and abs(v - 127) <= 10:
+                else:
+                    mask = np.logical_and(
+                        yuv[:, :, 0] < 127, np.logical_and(abs(yuv[:, :, 1] - 127) <= 10, abs(yuv[:, :, 2] - 127) <= 10))
+            else:
+                if u_v_positive:
+                    mask = np.logical_and(
+                        yuv[:, :, 1] > 127, yuv[:, :, 2] > 127)
+                elif u_v_negative:
+                    mask = np.logical_and(
+                        yuv[:, :, 1] < 127, yuv[:, :, 2] < 127)
+                elif u_positive_v_negative:
+                    mask = np.logical_and(
+                        yuv[:, :, 1] > 127, yuv[:, :, 2] < 127)
+                else:
+                    mask = np.logical_and(
+                        yuv[:, :, 1] < 127, yuv[:, :, 2] > 127)
+            mask = mask.astype(np.uint8) * 255
+            print(mask)
+            count = search_contours_YUV(mask)
 
-        diff_lower_hue = cv2.getTrackbarPos('Lower-Hue', 'Trackbars')
-        diff_upper_hue = cv2.getTrackbarPos('Upper-Hue', 'Trackbars')
+            cv2.putText(frame, f'Total: {count}', (5, 30),
+                        font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+            cv2.imshow('mask', mask)
+            video_window = VideoWindow()
+            video_window.show()
+            video_window.cargar_frame(frame)
+            #cv2.imshow('image', frame)
+            cv2.waitKey(0)
+            quit()
 
-        lower_hue = 0 if hue - diff_lower_hue < 0 else hue - diff_lower_hue
-        upper_hue = hue + diff_upper_hue if hue + diff_upper_hue < 179 else 179
+        diff_lower_u = cv2.getTrackbarPos('Lower-u', 'Trackbars')
+        diff_upper_u = cv2.getTrackbarPos('Upper-u', 'Trackbars')
 
-        lower_hsv = np.array([lower_hue, 50, 20])
-        upper_hsv = np.array([upper_hue, 255, 255])
+        diff_lower_v = cv2.getTrackbarPos('Lower-v', 'Trackbars_v')
+        diff_upper_v = cv2.getTrackbarPos('Upper-v', 'Trackbars_v')
 
-        mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
+        lower_u = 0 if u - diff_lower_u < 0 else u - diff_lower_u
+        upper_u = u + diff_upper_u if u + diff_upper_u < 255 else 255
 
-        count = search_contours(mask)
+        lower_v = 0 if v - diff_lower_v < 0 else u - diff_lower_v
+        upper_v = v + diff_upper_v if v + diff_upper_v < 255 else 255
 
-        cv2.putText(frame, f'Total: {count}', (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2, cv2.LINE_AA)
+        # print (lower_u, upper_u, lower_v, upper_v) with ("lower_u = ...")
+        if mouse_callback_triggered:
+            print("u= ", u, "v = ", v)
+            print("lower_u = ", lower_u, "upper_u = ", upper_u)
+            print("lower_v = ", lower_v, "upper_v = ", upper_v)
+            mouse_callback_triggered = False
 
-        cv2.imshow('mask', mask)
+        lower_uv_yuv = np.array([0, lower_u, lower_v])
+        upper_uv_yuv = np.array([255, upper_u, upper_v])
+
+        u_mask = cv2.inRange(yuv, lower_uv_yuv, upper_uv_yuv)
+
+        v_mask = cv2.inRange(yuv, lower_uv_yuv, upper_uv_yuv)
+
         cv2.imshow('image', frame)
         cv2.imshow('color_search', color_search)
         cv2.imshow('color_selected', color_selected)
-
+        cv2.imshow('yuv', yuv)
         if cv2.waitKey(1) & 0xFF == 27:
             break
     cv2.destroyAllWindows()
+    
+    K = 8
+trackbar_changed = False
 
-def do_video(frame_local):
-    global frame
-    frame = frame_local
-    cv2.namedWindow('image')
-    cv2.setMouseCallback('image', select_color)
 
+def on_trackbar_change(value):
+    global K
+    global trackbar_changed
+    K = value
+    trackbar_changed = True
+    print(K)
+
+def quantization(self, image):
+    global trackbar_changed
     cv2.namedWindow('Trackbars')
     cv2.resizeWindow('Trackbars', 400, 80)
 
-    cv2.createTrackbar('Lower-Hue', 'Trackbars', 14, 179, nothing)
-    cv2.createTrackbar('Upper-Hue', 'Trackbars', 18, 179, nothing)
-    while not mouse_callback_triggered:
-        cv2.imshow('image', frame)
+    cv2.createTrackbar('K', 'Trackbars', K, 20, on_trackbar_change)
 
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    Z = image.reshape((-1, 3))
+    # convert to np.float32
+    Z = np.float32(Z)
+    # define criteria, number of clusters(K) and apply kmeans()
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
 
-        diff_lower_hue = cv2.getTrackbarPos('Lower-Hue', 'Trackbars')
-        diff_upper_hue = cv2.getTrackbarPos('Upper-Hue', 'Trackbars')
+    while True:
+        if trackbar_changed and K != 0:
+            ret, label, center = cv2.kmeans(
+                Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+            # Now convert back into uint8, and make original image
+            center = np.uint8(center)
+            print(center)
+            print(label)
+            res = center[label.flatten()]
+            res2 = res.reshape((image.shape))
+            cv2.imshow('res2', res2)
+            trackbar_changed = False
 
-        lower_hue = 0 if hue - diff_lower_hue < 0 else hue - diff_lower_hue
-        upper_hue = hue + diff_upper_hue if hue + diff_upper_hue < 179 else 179
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
 
-        lower_hsv = np.array([lower_hue, 50, 20])
-        upper_hsv = np.array([upper_hue, 255, 255])
-
-        mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
-
-        count = search_contours(mask)
-
-        cv2.putText(frame, f'Total: {count}', (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2, cv2.LINE_AA)
-
-        cv2.imshow('mask', mask)
-        cv2.imshow('image', frame)
-        cv2.imshow('color_search', color_search)
-        cv2.imshow('color_selected', color_selected)
-        
     cv2.destroyAllWindows()
-    return frame
