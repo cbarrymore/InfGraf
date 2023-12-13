@@ -67,6 +67,11 @@ class Ui_MainWindow(object):
         self.pushButton_10 = QPushButton(self.centralWidget)
         self.pushButton_10.setObjectName(u"pushButton_10")
         self.pushButton_10.setGeometry(QRect(140, 300, 101, 31))
+
+        self.pushButton_11 = QPushButton(self.centralWidget)
+        self.pushButton_11.setObjectName(u"pushButton_11")
+        self.pushButton_11.setGeometry(QRect(140, 340, 101, 31))
+
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QMenuBar(MainWindow)
         self.menuBar.setObjectName(u"menuBar")
@@ -115,6 +120,8 @@ class Ui_MainWindow(object):
             "MainWindow", u"Otras implementaciones", None))
         self.pushButton_10.setText(QCoreApplication.translate(
             "MainWindow", u"Cuantificaci\u00f3n", None))
+        self.pushButton_11.setText(QCoreApplication.translate(
+            "MainWindow", u"Dithering", None))
     # retranslateUi
 
 
@@ -132,6 +139,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_8.clicked.connect(self.activate_counting_HSV)
         self.pushButton_9.clicked.connect(self.activate_counting_YUV)
         self.pushButton_10.clicked.connect(self.activate_quantization)
+        self.pushButton_11.clicked.connect(self.activate_dithering)
 
         self.color_clustering = False
         self.object_detection = False
@@ -139,6 +147,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.counting_HSV = False
         self.counting_YUV = False
         self.quantization = False
+        self.dithering = False
         self.pause = False
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
         self.model.cuda()
@@ -166,6 +175,9 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
 
     def activate_quantization(self):
         buttonsActions.action_activate_quantization(self)
+
+    def activate_dithering(self):
+        buttonsActions.action_activate_dithering(self)
 
     def activate_pause(self):
         buttonsActions.action_pause(self)
