@@ -66,11 +66,16 @@ class Ui_MainWindow(object):
         self.label_2.setGeometry(QRect(130, 280, 141, 20))
         self.pushButton_10 = QPushButton(self.centralWidget)
         self.pushButton_10.setObjectName(u"pushButton_10")
-        self.pushButton_10.setGeometry(QRect(140, 300, 101, 31))
-
+        self.pushButton_10.setGeometry(QRect(90, 300, 101, 31))
         self.pushButton_11 = QPushButton(self.centralWidget)
         self.pushButton_11.setObjectName(u"pushButton_11")
-        self.pushButton_11.setGeometry(QRect(140, 340, 101, 31))
+        self.pushButton_11.setGeometry(QRect(200, 300, 101, 31))
+        self.label_3 = QLabel(self.centralWidget)
+        self.label_3.setObjectName(u"label_3")
+        self.label_3.setGeometry(QRect(120, 340, 151, 16))
+        self.pushButton_12 = QPushButton(self.centralWidget)
+        self.pushButton_12.setObjectName(u"pushButton_12")
+        self.pushButton_12.setGeometry(QRect(140, 360, 101, 31))
 
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QMenuBar(MainWindow)
@@ -90,38 +95,24 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate(
-            "MainWindow", u"MainWindow", None))
-        self.pushButton.setText(QCoreApplication.translate(
-            "MainWindow", u"PushButton", None))
-        self.pushButton_2.setText(QCoreApplication.translate(
-            "MainWindow", u"Cargar imagen", None))
-        self.pushButton_3.setText(QCoreApplication.translate(
-            "MainWindow", u"Cargar video", None))
-        self.pushButton_4.setText(QCoreApplication.translate(
-            "MainWindow", u"Detectar", None))
-        self.pushButton_5.setText(
-            QCoreApplication.translate("MainWindow", u"Color", None))
-        self.pushButton_6.setText(QCoreApplication.translate(
-            "MainWindow", u"Ver contenido", None))
-        self.pushButton_7.setText(
-            QCoreApplication.translate("MainWindow", u"Pausar", None))
-        self.label.setText(QCoreApplication.translate(
-            "MainWindow", u"Detectar objetos:", None))
-        self.label_3.setText(QCoreApplication.translate(
-            "MainWindow", u"Conteo de objetos (RGB)", None))
-        self.label_4.setText(QCoreApplication.translate(
-            "MainWindow", u"Detecci\u00f3n de objetos por color", None))
-        self.pushButton_8.setText(QCoreApplication.translate(
-            "MainWindow", u"Formato HSV", None))
-        self.pushButton_9.setText(QCoreApplication.translate(
-            "MainWindow", u"Formato YUV", None))
-        self.label_2.setText(QCoreApplication.translate(
-            "MainWindow", u"Otras implementaciones", None))
-        self.pushButton_10.setText(QCoreApplication.translate(
-            "MainWindow", u"Cuantificaci\u00f3n", None))
-        self.pushButton_11.setText(QCoreApplication.translate(
-            "MainWindow", u"Dithering", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"PushButton", None))
+        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Cargar imagen", None))
+        self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"Cargar video", None))
+        self.pushButton_4.setText(QCoreApplication.translate("MainWindow", u"Detectar", None))
+        self.pushButton_5.setText(QCoreApplication.translate("MainWindow", u"Color", None))
+        self.pushButton_6.setText(QCoreApplication.translate("MainWindow", u"Ver contenido", None))
+        self.pushButton_7.setText(QCoreApplication.translate("MainWindow", u"Pausar", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Detectar objetos:", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"Conteo de objetos (RGB)", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Detecci\u00f3n de objetos por color", None))
+        self.pushButton_8.setText(QCoreApplication.translate("MainWindow", u"Formato HSV", None))
+        self.pushButton_9.setText(QCoreApplication.translate("MainWindow", u"Formato YUV", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Otras implementaciones", None))
+        self.pushButton_10.setText(QCoreApplication.translate("MainWindow", u"Cuantificaci\u00f3n", None))
+        self.pushButton_11.setText(QCoreApplication.translate("MainWindow", u"Dithering", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"Cuantificación de detecciones", None))
+        self.pushButton_12.setText(QCoreApplication.translate("MainWindow", u"Cuantificaci\u00f3n", None))
     # retranslateUi
 
 
@@ -140,6 +131,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_9.clicked.connect(self.activate_counting_YUV)
         self.pushButton_10.clicked.connect(self.activate_quantization)
         self.pushButton_11.clicked.connect(self.activate_dithering)
+        self.pushButton_12.clicked.connect(self.activate_quantization_roi)
 
         self.color_clustering = False
         self.object_detection = False
@@ -148,6 +140,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.counting_YUV = False
         self.quantization = False
         self.dithering = False
+        self.quantization_roi = False
         self.pause = False
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
         self.model.cuda()
@@ -178,6 +171,9 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
 
     def activate_dithering(self):
         buttonsActions.action_activate_dithering(self)
+
+    def activate_quantization_roi(self):
+        buttonsActions.activate_quantization_roi(self)
 
     def activate_pause(self):
         buttonsActions.action_pause(self)

@@ -92,7 +92,7 @@ def create_color_palette_bar():
 
 def quantization(self, image):
     global trackbar_changed
-    global video_window
+    
     cv2.namedWindow('Trackbars')
     cv2.resizeWindow('Trackbars', 400, 80)
 
