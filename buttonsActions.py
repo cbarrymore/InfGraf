@@ -1,7 +1,6 @@
 from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QFileDialog
 import cv2
-import numpy as np
 from videoWindow import VideoWindow
 import quantization
 import color
@@ -13,37 +12,7 @@ class ArchivoInfo:
         self.nombre = ""
         self.tipo = ""
 
-
-criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-flags = cv2.KMEANS_RANDOM_CENTERS
-font = cv2.FONT_HERSHEY_SIMPLEX
-
 archivo = ArchivoInfo()
-count_frame = 0
-color_count = {}
-color_search = np.zeros((200, 200, 3), np.uint8)
-color_selected = np.zeros((200, 200, 3), np.uint8)
-hue = 0
-saturation = 0
-value = 0
-mouse_callback_triggered = False
-white_flag = False
-black_flag = False
-
-hue = 0
-_y = 0
-u = 0
-v = 0
-u_v_positive = False
-u_v_negative = False
-u_positive_v_negative = False
-u_negative_v_positive = False
-near_center = False
-white = False
-K = 8
-trackbar_changed = False
-cargada = False
-ultimo_frame = None
 video_window = None
 
 
@@ -65,9 +34,6 @@ def action_cargar_video(self):
 
 
 def action_mostrar_contenido(self):
-    global count_frame
-    global cargada
-    global ultimo_frame
     global video_window
 
     if video_window == None or not video_window.isVisible():
@@ -79,17 +45,12 @@ def action_mostrar_contenido(self):
 
         ret, frame = cap.read()
 
-        # Crea una ventana con un nombre
-        # cv2.namedWindow("Video")
-
         count_frame = 0
         while cap.isOpened():
             ret, frame = cap.read()
-            ultimo_frame = frame.copy()
             if not ret:
                 break
             if self.object_detection == True:
-                # call a function to detect objects
                 frame = detect_objects(self, frame, count_frame)
             if self.counting_HSV == True:
                 color.do_image_HSV(frame)
@@ -99,7 +60,6 @@ def action_mostrar_contenido(self):
                 self.counting_YUV = False
             if self.quantization == True:
                 quantization.quantization(self, frame)
-                # quantization(self, frame)
                 self.quantization = False
             video_window.cargar_frame(frame)
             if not video_window.isVisible():
@@ -117,10 +77,8 @@ def action_mostrar_contenido(self):
             color.do_image_YUV(img)
         if self.quantization == True:
             quantization.quantization(self, img)
-            # quantization(self, img)
         if not self.counting_HSV and not self.counting_YUV and not self.quantization:
             if self.object_detection == True:
-                # call a function to detect objects
                 img = detect_objects(self, img)
             video_window.cargar_frame(img)
 
@@ -195,16 +153,5 @@ def activate_quantization_roi(self):
         self.quantization_roi = True
     else:
         self.quantization_roi = False
-    if archivo.tipo == "imagen":
-        self.mostrar_contenido()
-
-def action_pause(self):
-    global cargada
-
-    if self.pause == True:
-        self.pause = False
-    else:
-        self.pause = True
-        cargada = False
     if archivo.tipo == "imagen":
         self.mostrar_contenido()

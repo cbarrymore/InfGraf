@@ -3,7 +3,6 @@ import cv2
 
 color_count = {}
 K = 3
-create_Trackbar = False
 
 def detect_objects(self, frame, count_frame = 0):
     original_frame = frame.copy()
@@ -78,14 +77,12 @@ def on_trackbar_change(value):
     K = value
 
 def quantization_detections(pred, frame, original_frame):
-    global create_Trackbar
     global K
     
-    if not create_Trackbar:
+    if cv2.getWindowProperty('Trackbars', cv2.WND_PROP_VISIBLE) == 0:
         cv2.namedWindow('Trackbars')
         cv2.resizeWindow('Trackbars', 400, 80)
         cv2.createTrackbar('K', 'Trackbars', K, 64, on_trackbar_change)
-        create_Trackbar= True
         
     pred = pred[pred[:, 5] == 0]      
     for det in pred:      
