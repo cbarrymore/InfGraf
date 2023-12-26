@@ -1,19 +1,6 @@
-################################################################################
-# Form generated from reading UI file 'mainwindow.ui'
-##
-# Created by: Qt User Interface Compiler version 5.15.2
-##
-# WARNING! All changes made in this file will be lost when recompiling UI file!
-################################################################################
-
 from PySide2.QtCore import QCoreApplication, QRect, QMetaObject, Qt, QUrl
-from PySide2.QtGui import QPixmap, QImage
-from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QMenuBar, QToolBar, QStatusBar, QFileDialog, QLabel
-from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
-import cv2
-import pytorch_media_detect
+from PySide2.QtWidgets import QMainWindow, QPushButton, QWidget, QMenuBar, QToolBar, QStatusBar, QLabel
 import torch
-import counting_by_color
 import numpy as np
 import buttonsActions
 

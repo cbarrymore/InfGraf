@@ -12,13 +12,11 @@ def on_trackbar_change(value):
 
 
 def find_closest_palette_color(pixel):
-    # min euclidean distance between pixel and color_palette
-    # return color_palette[index]
     distances = np.linalg.norm(color_palette - pixel, axis=1)
     index = np.argmin(distances)
+    
     return color_palette[index]
 
-    # Return the closest palette color
 
 
 def floyd_steinberg_dithering(image):
@@ -48,23 +46,9 @@ def quantization_kmeans(Z, K, criteria, image):
     ret, label, center = cv2.kmeans(
         Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
 
-    # for i in range(K):
-    #     cluster_points = Z[label.flatten() == i]
-    #     plt.scatter(cluster_points[:, 0],
-    #                 cluster_points[:, 1], label=f'Cluster {i + 1}')
-
-    # # Plot the cluster centers
-    # plt.scatter(center[:, 0], center[:, 1], marker='X',
-    #             s=200, c='red', label='Cluster Centers')
-
-    # plt.title('K-Means Clustering Results')
-    # plt.legend()
-    # plt.show()
-
     # Now convert back into uint8, and make original image
     center = np.uint8(center)
     color_palette = center.copy()
-    # convert color_palette to int
     color_palette = color_palette.astype(int)
     res = center[label.flatten()]
     return res.reshape((image.shape)), color_palette
@@ -99,7 +83,6 @@ def quantization(self, image):
     cv2.createTrackbar('K', 'Trackbars', K, 64, on_trackbar_change)
 
     Z = image.reshape((-1, 3))
-    # convert to np.float32
     Z = np.float32(Z)
     # define criteria, number of clusters(K) and apply kmeans()
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)

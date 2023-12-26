@@ -53,7 +53,7 @@ def select_color_HSV(event, x, y, flags, param):
             black_flag = True
 
         print(hsv[y, x])
-    mouse_callback_triggered = True  # Se activa la variable global
+    mouse_callback_triggered = True
 
 
 def do_image_HSV(image):
@@ -112,7 +112,6 @@ def do_image_HSV(image):
         cv2.imshow('mask', mask)
         cv2.imshow('image', frame)
         video_window.cargar_frame(frame)
-        # cv2.imshow('image', frame)
         cv2.imshow('color_search', color_search)
         cv2.imshow('color_selected', color_selected)
 
@@ -170,7 +169,7 @@ def select_color_YUV(event, x, y, flags, param):
         else:
             u_v_negative = True
         print(yuv[y, x])
-        mouse_callback_triggered = True  # Se activa la variable global
+        mouse_callback_triggered = True
 
 
 def filter_colors_YUV(yuv_image, radius):
@@ -213,7 +212,6 @@ def do_image_YUV(image):
                     print("white")
                     mask = np.logical_and(
                         yuv[:, :, 0] > 127, np.logical_and(abs(yuv[:, :, 1] - 127) <= 10, abs(yuv[:, :, 2] - 127) <= 10))
-                    # if abs(u - 127) <= 10 and abs(v - 127) <= 10:
                 else:
                     print("black")
                     mask = np.logical_and(
