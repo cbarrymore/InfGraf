@@ -51,7 +51,7 @@ def action_mostrar_contenido(self):
             if not ret:
                 break
             if self.object_detection == True:
-                frame = detect_objects(self, frame, count_frame)
+                frame = detect_objects(self, frame,archivo.tipo, video_window, count_frame)
             if self.counting_HSV == True:
                 color.do_image_HSV(frame)
                 self.counting_HSV = False
@@ -79,7 +79,7 @@ def action_mostrar_contenido(self):
             quantization.quantization(self, img)
         if not self.counting_HSV and not self.counting_YUV and not self.quantization:
             if self.object_detection == True:
-                img = detect_objects(self, img)
+                img = detect_objects(self, img, archivo.tipo, video_window)
             video_window.cargar_frame(img)
 
 

@@ -4,7 +4,7 @@ import cv2
 color_count = {}
 K = 3
 
-def detect_objects(self, frame, count_frame = 0):
+def detect_objects(self, frame, archivo_tipo, video_window, count_frame = 0):
     original_frame = frame.copy()
     detection = self.model(frame)
     pred = detection.xyxy[0]  # frame predictions (tensor)
@@ -14,7 +14,7 @@ def detect_objects(self, frame, count_frame = 0):
     if self.color_counting:
         detection_frame = func_color_counting(pred, frame, original_frame, count_frame)
     if self.quantization_roi:
-        detection_frame = quantization_detections(pred, frame, original_frame)
+        detection_frame = quantization_detections(pred, frame, original_frame, archivo_tipo, video_window)
     return detection_frame
 
 def distancia_color(color1, color2):
@@ -74,23 +74,44 @@ def func_color_counting(pred, frame, original_frame, count_frame = 0):
 
 def on_trackbar_change(value):
     global K
-    K = value
-
-def quantization_detections(pred, frame, original_frame):
-    global K
+    global trackbar_changed
     
+    K = value
+    trackbar_changed = True
+
+def quantization_detections(pred, frame, original_frame, archivo_tipo, video_window):
+    global K
+    global trackbar_changed
+
     if cv2.getWindowProperty('Trackbars', cv2.WND_PROP_VISIBLE) == 0:
         cv2.namedWindow('Trackbars')
         cv2.resizeWindow('Trackbars', 400, 80)
         cv2.createTrackbar('K', 'Trackbars', K, 64, on_trackbar_change)
-        
-    pred = pred[pred[:, 5] == 0]      
-    for det in pred:      
-        xmin, ymin, xmax, ymax, conf, class_id = det
-        xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])  
-        roi = original_frame[ymin:ymax, xmin:xmax]
-        roi = quantization_roi(roi)          
-        frame[ymin:ymax, xmin:xmax] = roi
+    
+    pred = pred[pred[:, 5] == 0] 
+    if archivo_tipo == "imagen":
+        while cv2.getWindowProperty('Trackbars', cv2.WND_PROP_VISIBLE) == 1:
+            if trackbar_changed:
+                for det in pred:      
+                    xmin, ymin, xmax, ymax, conf, class_id = det
+                    xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])  
+                    roi = original_frame[ymin:ymax, xmin:xmax]
+                    roi = quantization_roi(roi)          
+                    frame[ymin:ymax, xmin:xmax] = roi
+                trackbar_changed = False
+            video_window.cargar_frame(frame)
+            
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
+                
+    else:
+        for det in pred:      
+            xmin, ymin, xmax, ymax, conf, class_id = det
+            xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])  
+            roi = original_frame[ymin:ymax, xmin:xmax]
+            roi = quantization_roi(roi)          
+            frame[ymin:ymax, xmin:xmax] = roi
+            trackbar_changed = False
         
     return frame
             
